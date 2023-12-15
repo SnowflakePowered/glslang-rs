@@ -1,0 +1,3 @@
+[submodule "glslang-sys/native/glslang"]
+	path = glslang-sys/native/glslang
+	url = https://github.com/KhronosGroup/glslang
