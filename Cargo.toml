@@ -1,0 +1,6 @@
+[workspace]
+
+members = [ "bindings_generator",
+    "glslang",
+    "glslang-sys",
+]
