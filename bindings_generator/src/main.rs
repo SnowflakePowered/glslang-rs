@@ -18,6 +18,7 @@ fn main() {
         .rustified_enum("glslang_resource_type_t")
         .rustified_enum("glslang_profile_t")
         .clang_arg("-Iglslang-sys/native/glslang/glslang/Include")
+        .clang_arg("-Iglslang-sys/native/glslang/glslang/Public")
         .generate()
         .expect("Unable to generate bindings");
     bindings

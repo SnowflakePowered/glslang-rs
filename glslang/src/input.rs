@@ -25,14 +25,15 @@ impl<'a> ShaderInput<'a> {
         Self {
             source,
             resource: &resource.0,
+            // todo: input builder
             input: sys::glslang_input_t {
                 language: sys::glslang_source_t_GLSLANG_SOURCE_GLSL,
                 stage,
-                client: sys::glslang_client_t::GLSLANG_CLIENT_NONE,
-                client_version: sys::glslang_target_client_version_t::GLSLANG_TARGET_VULKAN_1_0,
-                target_language: sys::glslang_target_language_t::GLSLANG_TARGET_NONE,
+                client: sys::glslang_client_t::GLSLANG_CLIENT_VULKAN,
+                client_version: sys::glslang_target_client_version_t::GLSLANG_TARGET_VULKAN_1_2,
+                target_language: sys::glslang_target_language_t::GLSLANG_TARGET_SPV,
                 target_language_version:
-                    sys::glslang_target_language_version_t::GLSLANG_TARGET_SPV_1_0,
+                    sys::glslang_target_language_version_t::GLSLANG_TARGET_SPV_1_5,
                 code: source.0.as_ptr(),
                 default_version: 100,
                 default_profile: sys::glslang_profile_t::GLSLANG_NO_PROFILE,
