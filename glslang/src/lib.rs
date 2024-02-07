@@ -1,16 +1,18 @@
 use std::sync::OnceLock;
 
 mod ctypes;
-mod limits;
 mod shader;
 
 pub mod error;
 pub mod input;
+pub mod limits;
 mod program;
 
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 pub struct Compiler;
-use crate::ctypes::ShaderStage;
+
+pub use crate::ctypes::*;
+
 pub use program::Program;
 pub use shader::Shader;
 
@@ -35,9 +37,4 @@ impl Drop for Compiler {
             glslang_sys::glslang_finalize_process();
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }

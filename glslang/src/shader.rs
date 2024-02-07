@@ -68,7 +68,6 @@ impl<'a> Shader<'a> {
         unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0) }
     }
 
-    // todo: make this version enum
     pub fn glsl_version(&mut self, version: i32) {
         unsafe { sys::glslang_shader_set_glsl_version(self.handle.as_ptr(), version) }
     }
@@ -84,8 +83,9 @@ impl<'a> Shader<'a> {
         string
     }
 
-    fn get_code(&self) -> String {
+    pub fn get_preprocessed_code(&self) -> String {
         let c_str = unsafe {
+            // SAFETY: for Shader to be initialized preprocessing + parsing had to be complete.
             CStr::from_ptr(sys::glslang_shader_get_preprocessed_code(
                 self.handle.as_ptr(),
             ))
@@ -109,7 +109,7 @@ impl<'a> Drop for Shader<'a> {
 mod tests {
     use super::*;
     use crate::ctypes::ShaderStage;
-    use crate::input::ShaderSource;
+    use crate::input::{CompilerOptions, ShaderSource};
     use crate::limits::ResourceLimits;
 
     #[test]
@@ -131,10 +131,15 @@ void main() {
         .expect("source");
 
         let limits = ResourceLimits::default();
-        let input = ShaderInput::new(&source, &limits, ShaderStage::GLSLANG_STAGE_FRAGMENT);
+        let input = ShaderInput::new(
+            &source,
+            &limits,
+            ShaderStage::Fragment,
+            &CompilerOptions::default(),
+        );
         let shader = Shader::new(&compiler, input).expect("shader init");
 
-        let code = shader.get_code();
+        let code = shader.get_preprocessed_code();
 
         println!("{}", code);
     }

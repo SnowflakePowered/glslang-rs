@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/glslang-sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/glslang/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/glslang/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

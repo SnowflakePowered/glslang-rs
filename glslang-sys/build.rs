@@ -2,7 +2,7 @@ use cmake::Config;
 pub fn main() {
     let glslang_dst = Config::new("native/glslang")
         .configure_arg("-DENABLE_OPT=OFF")
-        .configure_arg("-DENABLE_HLSL=OFF")
+        .configure_arg("-DENABLE_HLSL=ON")
         .configure_arg("-DENABLE_GLSLANG_BINARIES=OFF")
         .profile("Release")
         .build_target("glslang")
@@ -10,7 +10,7 @@ pub fn main() {
 
     let spirv_dst = Config::new("native/glslang")
         .configure_arg("-DENABLE_OPT=OFF")
-        .configure_arg("-DENABLE_HLSL=OFF")
+        .configure_arg("-DENABLE_HLSL=ON")
         .configure_arg("-DENABLE_GLSLANG_BINARIES=OFF")
         .profile("Release")
         .build_target("SPIRV")

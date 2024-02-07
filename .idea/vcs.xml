@@ -3,5 +3,8 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/glslang-sys/native/glslang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/glslang-sys/native/glslang/External/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/glslang-sys/native/glslang/External/spirv-tools" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/glslang-sys/native/glslang/External/spirv-tools/external/spirv-headers" vcs="Git" />
   </component>
 </project>

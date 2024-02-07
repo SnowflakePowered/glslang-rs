@@ -1,3 +1,9 @@
+pub use glslang_sys::glslang_client_t as TargetEnv;
+pub use glslang_sys::glslang_profile_t as GlslProfile;
 pub use glslang_sys::glslang_resource_type_t as ResourceType;
 pub use glslang_sys::glslang_shader_options_t as ShaderOptions;
+pub use glslang_sys::glslang_source_t as SourceLanguage;
+pub use glslang_sys::glslang_stage_mask_t as ShaderStages;
 pub use glslang_sys::glslang_stage_t as ShaderStage;
+pub use glslang_sys::glslang_target_client_version_t as EnvVersion;
+pub use glslang_sys::glslang_target_language_version_t as SpirvVersion;

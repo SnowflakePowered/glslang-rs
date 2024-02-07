@@ -1,6 +1,7 @@
 use crate::ctypes::ShaderStage;
 use crate::error::GlslangError;
 use crate::limits::ResourceLimits;
+use crate::{EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::CString;
@@ -15,31 +16,57 @@ impl TryFrom<String> for ShaderSource {
 }
 
 pub struct ShaderInput<'a> {
-    source: &'a ShaderSource,
-    resource: &'a sys::glslang_resource_t,
+    // Keep these alive.
+    _source: &'a ShaderSource,
+    _resource: &'a sys::glslang_resource_t,
     pub(crate) input: sys::glslang_input_t,
 }
 
-impl<'a> ShaderInput<'a> {
-    pub fn new(source: &'a ShaderSource, resource: &'a ResourceLimits, stage: ShaderStage) -> Self {
+#[derive(Debug, Copy, Clone)]
+pub struct CompilerOptions {
+    pub source_language: SourceLanguage,
+    pub target: TargetEnv,
+    pub target_version: EnvVersion,
+    pub spirv_version: SpirvVersion,
+    pub version_profile: Option<(i32, GlslProfile)>,
+}
+
+impl Default for CompilerOptions {
+    fn default() -> Self {
         Self {
-            source,
-            resource: &resource.0,
+            source_language: SourceLanguage::GLSL,
+            target: TargetEnv::Vulkan,
+            target_version: EnvVersion::Vulkan1_0,
+            spirv_version: SpirvVersion::SPIRV_1_0,
+            version_profile: None,
+        }
+    }
+}
+
+impl<'a> ShaderInput<'a> {
+    pub fn new(
+        source: &'a ShaderSource,
+        resource: &'a ResourceLimits,
+        stage: ShaderStage,
+        options: &CompilerOptions,
+    ) -> Self {
+        Self {
+            _source: source,
+            _resource: &resource.0,
             // todo: input builder
             input: sys::glslang_input_t {
-                language: sys::glslang_source_t_GLSLANG_SOURCE_GLSL,
+                language: options.source_language,
                 stage,
-                client: sys::glslang_client_t::GLSLANG_CLIENT_VULKAN,
-                client_version: sys::glslang_target_client_version_t::GLSLANG_TARGET_VULKAN_1_2,
-                target_language: sys::glslang_target_language_t::GLSLANG_TARGET_SPV,
-                target_language_version:
-                    sys::glslang_target_language_version_t::GLSLANG_TARGET_SPV_1_5,
+                client: options.target,
+                client_version: options.target_version,
+                target_language: sys::glslang_target_language_t::SPIRV,
+                target_language_version: options.spirv_version,
                 code: source.0.as_ptr(),
-                default_version: 100,
-                default_profile: sys::glslang_profile_t::GLSLANG_NO_PROFILE,
-                force_default_version_and_profile: 0,
+                default_version: options.version_profile.map_or(100, |o| o.0),
+                default_profile: options.version_profile.map_or(GlslProfile::None, |o| o.1),
+                force_default_version_and_profile: options.version_profile.map_or(0, |_| 1),
                 forward_compatible: 0,
-                messages: sys::glslang_messages_t::GLSLANG_MSG_DEFAULT_BIT,
+                messages: sys::glslang_messages_t::DEFAULT,
                 resource: &resource.0,
                 callbacks: glsl_include_callbacks_s {
                     include_system: None,
