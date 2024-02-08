@@ -105,7 +105,6 @@ mod tests {
     use crate::input::{CompilerOptions, ShaderInput, ShaderSource};
     use crate::limits::ResourceLimits;
     use rspirv::binary::Disassemble;
-    use crate::callbacks::IncludeResult;
 
     #[test]
     pub fn test_compile() {

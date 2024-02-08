@@ -1,9 +1,16 @@
 [package]
 name = "glslang-sys"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
-description = "raw glslang C bindings"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/glslang-rs"
+readme = "../README.md"
+categories = ["compilers", "graphics"]
+keywords = ["shader", "compiler", "spirv", "glsl", "hlsl"]
+links = "glslang"
+
+description = "Raw C bindings to glslang"
 license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
