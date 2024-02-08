@@ -5,7 +5,6 @@ use crate::input::ShaderInput;
 use crate::Compiler;
 use glslang_sys as sys;
 use std::ffi::{CStr, CString};
-use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 pub struct Shader<'a> {
@@ -143,7 +142,7 @@ void main() {
             &limits,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
-            None
+            None,
         );
         let shader = Shader::new(&compiler, input).expect("shader init");
 

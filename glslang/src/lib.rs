@@ -3,21 +3,21 @@ use std::sync::OnceLock;
 mod ctypes;
 mod shader;
 
+mod callbacks;
 pub mod error;
 pub mod input;
 pub mod limits;
 mod program;
-mod callbacks;
 
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 pub struct Compiler;
 
 pub use crate::ctypes::*;
 
-pub use program::Program;
-pub use shader::Shader;
 use crate::error::GlslangError;
 use crate::input::ShaderInput;
+pub use program::Program;
+pub use shader::Shader;
 
 impl Compiler {
     pub fn acquire() -> Option<&'static Self> {
