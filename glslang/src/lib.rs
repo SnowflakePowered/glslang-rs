@@ -16,6 +16,8 @@ pub use crate::ctypes::*;
 
 pub use program::Program;
 pub use shader::Shader;
+use crate::error::GlslangError;
+use crate::input::ShaderInput;
 
 impl Compiler {
     pub fn acquire() -> Option<&'static Self> {
@@ -29,6 +31,14 @@ impl Compiler {
                 Some(Self)
             })
             .as_ref()
+    }
+
+    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader, GlslangError> {
+        Shader::new(&self, input)
+    }
+
+    pub fn create_program(&self) -> Program {
+        Program::new(&self)
     }
 }
 
