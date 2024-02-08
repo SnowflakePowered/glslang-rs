@@ -15,6 +15,13 @@ impl From<String> for ShaderSource {
     }
 }
 
+impl From<&str> for ShaderSource {
+    fn from(value: &str) -> Self {
+        // panic safety: String never has null bytes
+        Self(CString::new(value.to_string()).unwrap())
+    }
+}
+
 pub struct ShaderInput<'a> {
     // Keep these alive.
     _source: &'a ShaderSource,
