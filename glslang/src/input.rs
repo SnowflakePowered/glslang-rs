@@ -1,5 +1,4 @@
 use crate::ctypes::ShaderStage;
-use crate::error::GlslangError;
 use crate::limits::ResourceLimits;
 use crate::{callbacks, EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
 use glslang_sys as sys;
@@ -8,11 +7,11 @@ use std::ffi::{c_void, CString};
 use crate::callbacks::{IncludeCallback};
 
 pub struct ShaderSource(CString);
-impl TryFrom<String> for ShaderSource {
-    type Error = GlslangError;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(Self(CString::new(value)?))
+impl From<String> for ShaderSource {
+    fn from(value: String) -> Self {
+        // panic safety: String never has null bytes
+        Self(CString::new(value).unwrap())
     }
 }
 

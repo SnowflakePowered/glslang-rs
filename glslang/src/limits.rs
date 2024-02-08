@@ -1,7 +1,6 @@
 use glslang_sys as sys;
 
 pub use sys::glslang_limits_t as CompilerLimits;
-use crate::Compiler;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
