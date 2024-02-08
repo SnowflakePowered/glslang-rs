@@ -4,3 +4,4 @@ members = [ "bindings_generator",
     "glslang",
     "glslang-sys",
 ]
+resolver = "2"
