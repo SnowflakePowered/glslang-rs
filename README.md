@@ -8,7 +8,7 @@ Safe Rust bindings to glslang
 
 ```toml
 [dependencies]
-glslang = "0.2"
+glslang = "0.3"
 ```
 
 ## Example
