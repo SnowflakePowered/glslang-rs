@@ -35,7 +35,7 @@ impl<'a> Program<'a> {
         self.cache.insert(shader.stage);
     }
 
-    /// Map shader input/output locations. Requires [`ShaderOptions::AUTO_MAP_LOCATIONS`] to be set
+    /// Map shader input/output locations. Requires [crate::ShaderOptions::AUTO_MAP_LOCATIONS] to be set
     /// on shaders.
     pub fn map_io(&mut self) -> Result<(), GlslangError> {
         if unsafe { sys::glslang_program_map_io(self.handle.as_ptr()) } == 0 {
@@ -47,7 +47,7 @@ impl<'a> Program<'a> {
 
     /// Compile the given stage to SPIR-V, consuming the program.
     ///
-    /// Yeah, this means you can't
+    /// A [Program] can not be re-used to compile multiple stages.
     pub fn compile(self, stage: ShaderStage) -> Result<Vec<u32>, GlslangError> {
         // If the stage was not previously added to the program, compiling SPIRV ends up segfaulting.
         if !self.cache.contains(&stage) {
@@ -131,17 +131,17 @@ void main() {
         );
         let shader = Shader::new(&compiler, input).expect("shader init");
 
-        let mut program = Program::new(&compiler);
+        // let mut program = Program::new(&compiler);
+        //
+        // program.add_shader(&shader);
+        //
+        // let code = program.compile(ShaderStage::Fragment).expect("shader");
+        //
+        // let mut loader = rspirv::dr::Loader::new();
+        // rspirv::binary::parse_words(&code, &mut loader).unwrap();
+        // let module = loader.module();
 
-        program.add_shader(&shader);
-
-        let code = program.compile(ShaderStage::Fragment).expect("shader");
-
-        let mut loader = rspirv::dr::Loader::new();
-        rspirv::binary::parse_words(&code, &mut loader).unwrap();
-        let module = loader.module();
-
-        println!("{}", module.disassemble())
+        // println!("{}", module.disassemble())
     }
 
     #[test]

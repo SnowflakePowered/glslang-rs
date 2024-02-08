@@ -1,7 +1,7 @@
-use crate::callbacks::IncludeCallback;
 use crate::ctypes::ShaderStage;
+use crate::include::IncludeCallback;
 use crate::limits::ResourceLimits;
-use crate::{callbacks, EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
+use crate::{include, EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::{c_void, CString};
@@ -82,9 +82,9 @@ impl<'a> ShaderInput<'a> {
                 messages: sys::glslang_messages_t::DEFAULT,
                 resource: &resource.0,
                 callbacks: glsl_include_callbacks_s {
-                    include_system: Some(callbacks::_glslang_rs_sys_func),
-                    include_local: Some(callbacks::_glslang_rs_local_func),
-                    free_include_result: Some(callbacks::_glslang_rs_drop_result),
+                    include_system: Some(include::_glslang_rs_sys_func),
+                    include_local: Some(include::_glslang_rs_local_func),
+                    free_include_result: Some(include::_glslang_rs_drop_result),
                 },
                 callbacks_ctx: callbacks_ctx as *mut c_void,
             },
