@@ -53,7 +53,6 @@ impl<'a> ShaderInput<'a> {
         Self {
             _source: source,
             _resource: &resource.0,
-            // todo: input builder
             input: sys::glslang_input_t {
                 language: options.source_language,
                 stage,

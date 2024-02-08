@@ -26,6 +26,7 @@ fn main() {
         .bitfield_enum("glslang_shader_options_t")
         .rustified_enum("glslang_resource_type_t")
         .rustified_enum("glslang_profile_t")
+        .no_default("glslang_limits_s")
         .clang_arg("-Iglslang-sys/native/glslang/glslang/Include")
         .clang_arg("-Iglslang-sys/native/glslang/glslang/Public")
         .generate()
