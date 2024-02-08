@@ -1,10 +1,11 @@
 use crate::ctypes::ShaderStage;
 use crate::error::GlslangError;
 use crate::limits::ResourceLimits;
-use crate::{EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
+use crate::{callbacks, EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
-use std::ffi::CString;
+use std::ffi::{c_void, CString};
+use crate::callbacks::{IncludeCallback};
 
 pub struct ShaderSource(CString);
 impl TryFrom<String> for ShaderSource {
@@ -49,7 +50,12 @@ impl<'a> ShaderInput<'a> {
         resource: &'a ResourceLimits,
         stage: ShaderStage,
         options: &CompilerOptions,
+        callbacks: Option<IncludeCallback>
     ) -> Self {
+
+        let callbacks_ctx = callbacks
+            .map_or(core::ptr::null_mut(), |callback| Box::into_raw(Box::new(callback)));
+
         Self {
             _source: source,
             _resource: &resource.0,
@@ -68,11 +74,11 @@ impl<'a> ShaderInput<'a> {
                 messages: sys::glslang_messages_t::DEFAULT,
                 resource: &resource.0,
                 callbacks: glsl_include_callbacks_s {
-                    include_system: None,
-                    include_local: None,
-                    free_include_result: None,
+                    include_system: Some(callbacks::_glslang_rs_sys_func),
+                    include_local: Some(callbacks::_glslang_rs_local_func),
+                    free_include_result: Some(callbacks::_glslang_rs_drop_result),
                 },
-                callbacks_ctx: core::ptr::null_mut(),
+                callbacks_ctx: callbacks_ctx as *mut c_void,
             },
         }
     }

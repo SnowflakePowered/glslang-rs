@@ -7,6 +7,7 @@ pub mod error;
 pub mod input;
 pub mod limits;
 mod program;
+mod callbacks;
 
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 pub struct Compiler;

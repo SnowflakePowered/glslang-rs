@@ -105,6 +105,8 @@ mod tests {
     use crate::input::{CompilerOptions, ShaderInput, ShaderSource};
     use crate::limits::ResourceLimits;
     use rspirv::binary::Disassemble;
+    use crate::callbacks::IncludeResult;
+
     #[test]
     pub fn test_compile() {
         let compiler = Compiler::acquire().unwrap();
@@ -129,6 +131,7 @@ void main() {
             &limits,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
+            None,
         );
         let shader = Shader::new(&compiler, input).expect("shader init");
 

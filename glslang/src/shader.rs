@@ -136,6 +136,7 @@ void main() {
             &limits,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
+            None
         );
         let shader = Shader::new(&compiler, input).expect("shader init");
 
