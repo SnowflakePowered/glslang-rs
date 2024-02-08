@@ -121,13 +121,13 @@ pub enum glslang_target_client_version_t {
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum glslang_target_language_version_t {
-    SPIRV_1_0 = 65536,
-    SPIRV_1_1 = 65792,
-    SPIRV_1_2 = 66048,
-    SPIRV_1_3 = 66304,
-    SPIRV_1_4 = 66560,
-    SPIRV_1_5 = 66816,
-    SPIRV_1_6 = 67072,
+    SPIRV1_0 = 65536,
+    SPIRV1_1 = 65792,
+    SPIRV1_2 = 66048,
+    SPIRV1_3 = 66304,
+    SPIRV1_4 = 66560,
+    SPIRV1_5 = 66816,
+    SPIRV1_6 = 67072,
 }
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]

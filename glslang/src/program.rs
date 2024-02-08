@@ -2,37 +2,39 @@ use crate::ctypes::ShaderStage;
 use crate::error::GlslangError;
 use crate::{Compiler, Shader};
 use glslang_sys as sys;
-use rustc_hash::FxHashSet;
+use rustc_hash::FxHashMap;
 use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-/// Lower-level program interface
+/// Lower-level program interface.
 pub struct Program<'a> {
     handle: NonNull<sys::glslang_program_t>,
-    cache: FxHashSet<ShaderStage>,
+    cache: FxHashMap<ShaderStage, bool>,
     _compiler: PhantomData<&'a Compiler>,
 }
 
 impl<'a> Program<'a> {
+    /// Create a new program instance.
     pub fn new(_compiler: &'a Compiler) -> Self {
         let program = Self {
             handle: unsafe {
                 NonNull::new(sys::glslang_program_create()).expect("glslang created null shader")
             },
-            cache: FxHashSet::default(),
+            cache: FxHashMap::default(),
             _compiler: PhantomData,
         };
 
         program
     }
 
+    /// Add a shader to the program. The lifetime of the shader must extend beyond the lifetime of the program instance.
     pub fn add_shader<'shader>(&mut self, shader: &'shader Shader<'shader>)
     where
         'a: 'shader,
     {
         unsafe { sys::glslang_program_add_shader(self.handle.as_ptr(), shader.handle.as_ptr()) }
-        self.cache.insert(shader.stage);
+        self.cache.insert(shader.stage, shader.is_spirv);
     }
 
     /// Map shader input/output locations. Requires [crate::ShaderOptions::AUTO_MAP_LOCATIONS] to be set
@@ -45,13 +47,31 @@ impl<'a> Program<'a> {
         Ok(())
     }
 
+    /// Link the program without compiling to SPIR-V.
+    ///
+    /// A [`Program`](crate::Program) can only be linked once.
+    pub fn link(self) -> Result<(), GlslangError> {
+        let messages = glslang_sys::glslang_messages_t::DEFAULT
+            | glslang_sys::glslang_messages_t::VULKAN_RULES
+            | glslang_sys::glslang_messages_t::SPV_RULES;
+
+        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
+            return Err(GlslangError::LinkError(self.get_log()));
+        }
+        Ok(())
+    }
+
     /// Compile the given stage to SPIR-V, consuming the program.
     ///
-    /// A [Program] can not be re-used to compile multiple stages.
+    /// A [`Program`](crate::Program) can not be re-used to compile multiple stages.
     pub fn compile(self, stage: ShaderStage) -> Result<Vec<u32>, GlslangError> {
         // If the stage was not previously added to the program, compiling SPIRV ends up segfaulting.
-        if !self.cache.contains(&stage) {
+        if !self.cache.contains_key(&stage) {
             return Err(GlslangError::ShaderStageNotFound(stage));
+        }
+
+        if let Some(false) = self.cache.get(&stage) {
+            return Err(GlslangError::NoLanguageTarget);
         }
 
         let messages = glslang_sys::glslang_messages_t::DEFAULT
@@ -99,9 +119,43 @@ impl<'a> Drop for Program<'a> {
 mod tests {
     use super::*;
     use crate::ctypes::ShaderStage;
-    use crate::input::{CompilerOptions, ShaderInput, ShaderSource};
-    use crate::limits::ResourceLimits;
+    use crate::shader::{CompilerOptions, OpenGlVersion, ShaderInput, ShaderSource, Target};
+    use crate::{GlslProfile, SourceLanguage};
     use rspirv::binary::Disassemble;
+
+    #[test]
+    pub fn test_link() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::try_from(String::from(
+            r#"
+#version 450
+
+layout(location = 0) out vec4 color;
+layout(binding = 1) uniform sampler2D tex;
+
+void main() {
+    color = texture(tex, vec2(0.0));
+}
+        "#,
+        ))
+            .expect("source");
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Fragment,
+            &CompilerOptions::default(),
+            None,
+        )
+            .expect("target");
+        let shader = Shader::new(&compiler, input).expect("shader init");
+
+        let program = Program::new(&compiler);
+        // program.add_shader(&shader);
+
+       program.link().expect("shader");
+
+    }
 
     #[test]
     pub fn test_compile() {
@@ -121,27 +175,105 @@ void main() {
         ))
         .expect("source");
 
-        let limits = ResourceLimits::default();
         let input = ShaderInput::new(
             &source,
-            &limits,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
             None,
-        );
+        )
+        .expect("target");
         let shader = Shader::new(&compiler, input).expect("shader init");
+        let code = shader.compile().expect("compile");
+        let mut loader = rspirv::dr::Loader::new();
+        rspirv::binary::parse_words(&code, &mut loader).unwrap();
+        let module = loader.module();
 
-        // let mut program = Program::new(&compiler);
-        //
-        // program.add_shader(&shader);
-        //
-        // let code = program.compile(ShaderStage::Fragment).expect("shader");
-        //
-        // let mut loader = rspirv::dr::Loader::new();
-        // rspirv::binary::parse_words(&code, &mut loader).unwrap();
-        // let module = loader.module();
+        println!("{}", module.disassemble())
+    }
 
-        // println!("{}", module.disassemble())
+    #[test]
+    pub fn test_compile_thread() {
+        let mut handles = Vec::new();
+        for _ in 0..8 {
+            handles.push(std::thread::spawn(|| {
+                test_compile()
+            }));
+        }
+
+        for handle in handles {
+            handle.join().unwrap()
+        }
+    }
+
+
+    #[test]
+    pub fn test_verify_old_gl() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::from(String::from(
+            r#"#version 120
+
+varying vec2 texcoord;
+
+void main() {
+    gl_Position = ftransform();
+    texcoord = gl_MultiTexCoord0.st;
+}
+        "#,
+        ));
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                version_profile: Some((890, GlslProfile::None)),
+            },
+            None,
+        )
+        .expect("target");
+        let _shader = Shader::new(&compiler, input).expect("shader init");
+    }
+
+    #[test]
+    pub fn test_no_language_target_does_not_segfault() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::try_from(String::from(
+            r#"
+#version 460
+
+
+layout(location = 0) out vec4 color;
+layout(binding = 1) uniform sampler2D tex;
+
+void main() {
+    color = texture(tex, vec2(0.0));
+}
+        "#,
+        ))
+        .expect("source");
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::None(None),
+                version_profile: None,
+            },
+            None,
+        )
+        .expect("target");
+        let shader = Shader::new(&compiler, input).expect("shader init");
+        assert!(matches!(
+            shader.compile(),
+            Err(GlslangError::NoLanguageTarget)
+        ));
     }
 
     #[test]
@@ -181,30 +313,29 @@ void main()
         );
         let mut program = Program::new(&compiler);
 
-        let limits = ResourceLimits::default();
         let fragment = ShaderInput::new(
             &fragment,
-            &limits,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
             None,
-        );
+        )
+        .expect("target");
         let fragment = Shader::new(&compiler, fragment).expect("shader init");
 
         program.add_shader(&fragment);
 
         let vertex = ShaderInput::new(
             &vertex,
-            &limits,
             ShaderStage::Vertex,
             &CompilerOptions::default(),
             None,
-        );
+        )
+        .expect("target");
         let vertex = Shader::new(&compiler, vertex).expect("shader init");
 
         program.add_shader(&vertex);
 
-        let code = program.compile(ShaderStage::Fragment).expect("shader");
+        let _code = program.compile(ShaderStage::Fragment).expect("shader");
 
         let mut program = compiler.create_program();
         program.add_shader(&vertex);

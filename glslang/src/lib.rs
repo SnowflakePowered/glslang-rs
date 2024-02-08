@@ -1,25 +1,29 @@
 use std::sync::OnceLock;
 
 mod ctypes;
-mod shader;
 
+/// Error types.
 pub mod error;
+
+/// Helpers for processing includes.
 pub mod include;
-pub mod input;
+/// Shader resouce limits.
 pub mod limits;
 mod program;
+mod shader;
 
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
+
+/// A handle representing the glslang compiler instance.
 pub struct Compiler;
 
 pub use crate::ctypes::*;
 
-use crate::error::GlslangError;
-use crate::input::ShaderInput;
 pub use program::Program;
-pub use shader::Shader;
+pub use shader::*;
 
 impl Compiler {
+    /// Acquire a global instance of the compiler.
     pub fn acquire() -> Option<&'static Self> {
         COMPILER_INSTANCE
             .get_or_init(|| {
@@ -33,10 +37,12 @@ impl Compiler {
             .as_ref()
     }
 
-    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader, GlslangError> {
+    /// Create a [`Shader`](crate::Shader) with the given inputs.
+    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader, error::GlslangError> {
         Shader::new(&self, input)
     }
 
+    /// Create a [`Program`](crate::Program) instance.
     pub fn create_program(&self) -> Program {
         Program::new(&self)
     }

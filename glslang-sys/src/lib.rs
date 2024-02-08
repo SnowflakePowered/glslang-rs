@@ -6,8 +6,8 @@ mod bindings;
 
 pub use bindings::*;
 
-impl Default for crate::bindings::glslang_limits_s {
-    fn default() -> Self {
+impl crate::bindings::glslang_limits_s {
+    pub const fn default() -> Self {
         crate::bindings::glslang_limits_t {
             non_inductive_for_loops: true,
             while_loops: true,
@@ -19,5 +19,11 @@ impl Default for crate::bindings::glslang_limits_s {
             general_variable_indexing: true,
             general_constant_matrix_vector_indexing: true,
         }
+    }
+}
+
+impl Default for crate::bindings::glslang_limits_s {
+    fn default() -> Self {
+        crate::bindings::glslang_limits_s::default()
     }
 }

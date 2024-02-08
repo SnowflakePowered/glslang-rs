@@ -1,13 +1,18 @@
 use glslang_sys as sys;
 
+/// Limits on what structural items a shader is allowed to have.
 pub use sys::glslang_limits_t as CompilerLimits;
 
+/// Default resource limits allowed by glslang.
+pub const DEFAULT_LIMITS: ResourceLimits = ResourceLimits::default_limits();
+
+/// Specifies resource limits allowed by each shader.
 #[repr(transparent)]
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct ResourceLimits(pub(crate) sys::glslang_resource_t);
 
-impl Default for ResourceLimits {
-    fn default() -> Self {
+impl ResourceLimits {
+    const fn default_limits() -> Self {
         Self(sys::glslang_resource_t {
             max_lights: 32,
             max_clip_planes: 6,
@@ -113,12 +118,28 @@ impl Default for ResourceLimits {
             __bindgen_anon_1: sys::glslang_resource_s__bindgen_ty_1 {
                 max_dual_source_draw_buffers_ext: 1,
             },
-            limits: CompilerLimits::default(),
+            limits: CompilerLimits {
+                non_inductive_for_loops: true,
+                while_loops: true,
+                do_while_loops: true,
+                general_uniform_indexing: true,
+                general_attribute_matrix_vector_indexing: true,
+                general_varying_indexing: true,
+                general_sampler_indexing: true,
+                general_variable_indexing: true,
+                general_constant_matrix_vector_indexing: true,
+            },
         })
+    }
+}
+impl Default for ResourceLimits {
+    fn default() -> Self {
+        Self::default_limits()
     }
 }
 
 impl ResourceLimits {
+    /// Get a mutable reference to the compiler limits.
     pub fn compiler_limits_mut(&mut self) -> &mut CompilerLimits {
         &mut self.0.limits
     }

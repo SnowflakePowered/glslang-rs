@@ -70,7 +70,7 @@ impl GlslangCallbacks {
     }
 
     pub fn rename_target_language_version(variant: &str) -> Option<String> {
-        Some(variant.replace("GLSLANG_TARGET_SPV_", "SPIRV_"))
+        Some(variant.replace("GLSLANG_TARGET_SPV_", "SPIRV"))
     }
     pub fn rename_target_client_version(variant: &str) -> Option<String> {
         if variant.starts_with("GLSLANG_TARGET_VULKAN_") {
