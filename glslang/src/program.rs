@@ -7,10 +7,10 @@ use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
+/// Lower-level program interface
 pub struct Program<'a> {
     handle: NonNull<sys::glslang_program_t>,
     cache: FxHashSet<ShaderStage>,
-    shaders: Vec<Shader<'a>>,
     _compiler: PhantomData<&'a Compiler>,
 }
 
@@ -21,20 +21,18 @@ impl<'a> Program<'a> {
                 NonNull::new(sys::glslang_program_create()).expect("glslang created null shader")
             },
             cache: FxHashSet::default(),
-            shaders: vec![],
             _compiler: PhantomData,
         };
 
         program
     }
 
-    pub fn add_shader<'shader>(&mut self, shader: Shader<'shader>)
+    pub fn add_shader<'shader>(&mut self, shader: &'shader Shader<'shader>)
     where
-        'shader: 'a,
+        'a: 'shader,
     {
         unsafe { sys::glslang_program_add_shader(self.handle.as_ptr(), shader.handle.as_ptr()) }
         self.cache.insert(shader.stage);
-        self.shaders.push(shader)
     }
 
     /// Map shader input/output locations. Requires [`ShaderOptions::AUTO_MAP_LOCATIONS`] to be set
@@ -47,22 +45,21 @@ impl<'a> Program<'a> {
         Ok(())
     }
 
-    pub fn link(&mut self) -> Result<(), GlslangError> {
+    /// Compile the given stage to SPIR-V, consuming the program.
+    ///
+    /// Yeah, this means you can't
+    pub fn compile(self, stage: ShaderStage) -> Result<Vec<u32>, GlslangError> {
+        // If the stage was not previously added to the program, compiling SPIRV ends up segfaulting.
+        if !self.cache.contains(&stage) {
+            return Err(GlslangError::ShaderStageNotFound(stage));
+        }
+
         let messages = glslang_sys::glslang_messages_t::DEFAULT
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
         if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
             return Err(GlslangError::LinkError(self.get_log()));
-        }
-
-        Ok(())
-    }
-
-    pub fn compile(&mut self, stage: ShaderStage) -> Result<Vec<u32>, GlslangError> {
-        // If the stage was not previously added to the program, compiling SPIRV ends up segfaulting.
-        if !self.cache.contains(&stage) {
-            return Err(GlslangError::ShaderStageNotFound(stage));
         }
 
         // We don't support SPIRV compile options because nearly all of them (except for generateDebugInfo),
@@ -136,13 +133,84 @@ void main() {
 
         let mut program = Program::new(&compiler);
 
-        program.add_shader(shader);
-        program.link().expect("link error");
+        program.add_shader(&shader);
 
         let code = program.compile(ShaderStage::Fragment).expect("shader");
-        //
+
         let mut loader = rspirv::dr::Loader::new();
         rspirv::binary::parse_words(&code, &mut loader).unwrap();
+        let module = loader.module();
+
+        println!("{}", module.disassemble())
+    }
+
+    #[test]
+    pub fn test_compile_program() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let fragment = ShaderSource::from(
+            r#"
+#version 450
+
+layout(location = 0) out vec4 color;
+layout(binding = 1) uniform sampler2D tex;
+
+void main() {
+    color = texture(tex, vec2(0.0));
+}
+        "#,
+        );
+
+        let vertex = ShaderSource::from(r#"
+#version 450
+layout(set = 0, binding = 0, std140) uniform UBO
+{
+    mat4 MVP;
+};
+
+layout(location = 0) in vec4 Position;
+layout(location = 1) in vec2 TexCoord;
+layout(location = 0) out vec2 vTexCoord;
+void main()
+{
+    gl_Position = MVP * Position;
+    vTexCoord = TexCoord;
+}
+"#);
+        let mut program = Program::new(&compiler);
+
+        let limits = ResourceLimits::default();
+        let fragment = ShaderInput::new(
+            &fragment,
+            &limits,
+            ShaderStage::Fragment,
+            &CompilerOptions::default(),
+            None,
+        );
+        let fragment = Shader::new(&compiler, fragment).expect("shader init");
+
+        program.add_shader(&fragment);
+
+        let vertex = ShaderInput::new(
+            &vertex,
+            &limits,
+            ShaderStage::Vertex,
+            &CompilerOptions::default(),
+            None,
+        );
+        let vertex = Shader::new(&compiler, vertex).expect("shader init");
+
+
+        program.add_shader(&vertex);
+
+        let code = program.compile(ShaderStage::Fragment).expect("shader");
+
+        let mut program = compiler.create_program();
+        program.add_shader(&vertex);
+        let code2 = program.compile(ShaderStage::Vertex).expect("shader");
+
+        let mut loader = rspirv::dr::Loader::new();
+        rspirv::binary::parse_words(&code2, &mut loader).unwrap();
         let module = loader.module();
 
         println!("{}", module.disassemble())

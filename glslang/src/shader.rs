@@ -11,7 +11,7 @@ use std::ptr::NonNull;
 pub struct Shader<'a> {
     pub(crate) handle: NonNull<sys::glslang_shader_t>,
     pub(crate) stage: ShaderStage,
-    _compiler: PhantomData<&'a Compiler>,
+    _compiler: &'a Compiler,
 }
 
 impl<'a> Shader<'a> {
@@ -22,7 +22,7 @@ impl<'a> Shader<'a> {
                     .expect("glslang created null shader")
             },
             stage: input.input.stage,
-            _compiler: PhantomData,
+            _compiler,
         };
 
         unsafe {
@@ -81,6 +81,13 @@ impl<'a> Shader<'a> {
             .expect("Expected glslang info log to be valid UTF-8");
 
         string
+    }
+
+    /// Convenience method to compile this shader without linking to other shaders.
+    pub fn compile(&self) -> Result<Vec<u32>, GlslangError> {
+        let mut program = self._compiler.create_program();
+        program.add_shader(&self);
+        program.compile(self.stage)
     }
 
     pub fn get_preprocessed_code(&self) -> String {

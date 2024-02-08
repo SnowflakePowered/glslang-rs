@@ -6,6 +6,7 @@ use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::{c_void, CString};
 use crate::callbacks::{IncludeCallback};
 
+#[derive(Debug, Clone)]
 pub struct ShaderSource(CString);
 
 impl From<String> for ShaderSource {
@@ -22,6 +23,7 @@ impl From<&str> for ShaderSource {
     }
 }
 
+#[derive(Clone)]
 pub struct ShaderInput<'a> {
     // Keep these alive.
     _source: &'a ShaderSource,
