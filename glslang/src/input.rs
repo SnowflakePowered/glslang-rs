@@ -1,10 +1,10 @@
+use crate::callbacks::IncludeCallback;
 use crate::ctypes::ShaderStage;
 use crate::limits::ResourceLimits;
 use crate::{callbacks, EnvVersion, GlslProfile, SourceLanguage, SpirvVersion, TargetEnv};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::{c_void, CString};
-use crate::callbacks::{IncludeCallback};
 
 #[derive(Debug, Clone)]
 pub struct ShaderSource(CString);
@@ -58,11 +58,11 @@ impl<'a> ShaderInput<'a> {
         resource: &'a ResourceLimits,
         stage: ShaderStage,
         options: &CompilerOptions,
-        callbacks: Option<IncludeCallback>
+        callbacks: Option<IncludeCallback>,
     ) -> Self {
-
-        let callbacks_ctx = callbacks
-            .map_or(core::ptr::null_mut(), |callback| Box::into_raw(Box::new(callback)));
+        let callbacks_ctx = callbacks.map_or(core::ptr::null_mut(), |callback| {
+            Box::into_raw(Box::new(callback))
+        });
 
         Self {
             _source: source,
