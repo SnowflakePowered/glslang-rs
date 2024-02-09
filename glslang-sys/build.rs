@@ -1,3 +1,4 @@
+use std::env;
 use glob::glob;
 
 pub fn add_subdirectory(build: &mut cc::Build, directory: &str) {
@@ -18,6 +19,11 @@ pub fn add_subdirectory(build: &mut cc::Build, directory: &str) {
 }
 
 pub fn main() {
+    if env::var("DOCS_RS").is_ok() {
+        println!("cargo:warning=Skipping glslang native build for docs.rs.");
+        return;
+    }
+
     let mut glslang_build = cc::Build::new();
     glslang_build
         .std("c++17")
