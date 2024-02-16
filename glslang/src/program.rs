@@ -6,6 +6,7 @@ use rustc_hash::FxHashMap;
 use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use glslang_sys::glslang_spv_options_s;
 
 /// Lower-level program interface.
 pub struct Program<'a> {
@@ -97,6 +98,55 @@ impl<'a> Program<'a> {
 
         Ok(buffer)
     }
+
+    /// Compile the given stage to SPIR-V, optimizing for size, consuming the program.
+    ///
+    /// A [`Program`](crate::Program) can not be re-used to compile multiple stages.
+    pub fn compile_size_optimized(self, stage: ShaderStage) -> Result<Vec<u32>, GlslangError> {
+        // If the stage was not previously added to the program, compiling SPIRV ends up segfaulting.
+        if !self.cache.contains_key(&stage) {
+            return Err(GlslangError::ShaderStageNotFound(stage));
+        }
+
+        if let Some(false) = self.cache.get(&stage) {
+            return Err(GlslangError::NoLanguageTarget);
+        }
+
+        let messages = glslang_sys::glslang_messages_t::DEFAULT
+            | glslang_sys::glslang_messages_t::VULKAN_RULES
+            | glslang_sys::glslang_messages_t::SPV_RULES;
+
+        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
+            return Err(GlslangError::LinkError(self.get_log()));
+        }
+
+        let mut options = glslang_spv_options_s {
+            generate_debug_info: false,
+            strip_debug_info: false,
+            disable_optimizer: false,
+            optimize_size: true,
+            disassemble: false,
+            validate: false,
+            emit_nonsemantic_shader_debug_info: false,
+            emit_nonsemantic_shader_debug_source: false,
+            compile_only: false,
+        };
+        // We don't support SPIRV compile options because nearly all of them (except for generateDebugInfo),
+        // require callbacks that either we don't expose, or are not exposed by the C API.
+        // disableOptimizer is redundant as well because we need to support WASM, which doesn't support
+        // the optimizer.
+        unsafe { sys::glslang_program_SPIRV_generate_with_options(self.handle.as_ptr(), stage, &mut options) }
+
+        let size = unsafe { sys::glslang_program_SPIRV_get_size(self.handle.as_ptr()) };
+        let mut buffer = vec![0u32; size];
+
+        unsafe {
+            sys::glslang_program_SPIRV_get(self.handle.as_ptr(), buffer.as_mut_ptr());
+        }
+
+        Ok(buffer)
+    }
+
     fn get_log(&self) -> String {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_program_get_info_log(self.handle.as_ptr())) };

@@ -112,6 +112,13 @@ impl<'a> Shader<'a> {
         program.compile(self.stage)
     }
 
+    /// Convenience method to compile this shader without linking to other shaders, optimizing for size.
+    pub fn compile_size_optimized(&self) -> Result<Vec<u32>, GlslangError> {
+        let mut program = self._compiler.create_program();
+        program.add_shader(&self);
+        program.compile_size_optimized(self.stage)
+    }
+
     /// Get the preprocessed shader string.
     pub fn get_preprocessed_code(&self) -> String {
         let c_str = unsafe {
