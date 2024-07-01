@@ -26,6 +26,7 @@ pub fn main() {
 
     let mut glslang_build = cc::Build::new();
     glslang_build
+        .cpp(true)
         .std("c++17")
         .define("ENABLE_HLSL", "ON")
         .define("ENABLE_OPT", "OFF")
