@@ -6,6 +6,7 @@ use crate::{include, limits, limits::ResourceLimits, Compiler};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::{c_void, CStr, CString};
+use std::ops::BitOr;
 use std::ptr::NonNull;
 
 use crate::{GlslProfile, SourceLanguage, SpirvVersion};
@@ -407,6 +408,27 @@ impl Target {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ShaderMessage(pub i32);
+
+impl ShaderMessage {
+    pub const DEFAULT: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEFAULT.0);
+    pub const DEBUG_INFO: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEBUG_INFO.0);
+    pub const CASCADING_ERRORS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::CASCADING_ERRORS.0);
+
+    pub fn convert(&self) -> sys::glslang_messages_t {
+        sys::glslang_messages_t(self.0)
+    }
+}
+impl BitOr for ShaderMessage {
+    type Output = Self;
+
+    // rhs is the "right-hand side" of the expression `a | b`
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
 /// Options to configure the compilation of a shader.
 #[derive(Debug, Clone)]
 pub struct CompilerOptions {
@@ -416,6 +438,8 @@ pub struct CompilerOptions {
     /// The GLSL version profile.
     /// If specified, will force the specified profile on compilation.
     pub version_profile: Option<(i32, GlslProfile)>,
+    // Messages to be passed to compiler
+    pub messages: ShaderMessage,
 }
 
 impl Default for CompilerOptions {
@@ -427,6 +451,7 @@ impl Default for CompilerOptions {
                 spirv_version: SpirvVersion::SPIRV1_0,
             },
             version_profile: None,
+            messages: ShaderMessage::DEFAULT
         }
     }
 }
@@ -479,7 +504,7 @@ impl<'a> ShaderInput<'a> {
                 default_profile: options.version_profile.map_or(GlslProfile::None, |o| o.1),
                 force_default_version_and_profile: options.version_profile.map_or(0, |_| 1),
                 forward_compatible: 0,
-                messages: sys::glslang_messages_t::DEFAULT | sys::glslang_messages_t::DEBUG_INFO,
+                messages: options.messages.convert(),
                 resource: &resource.0,
                 callbacks: glsl_include_callbacks_s {
                     include_system: Some(include::_glslang_rs_sys_func),
