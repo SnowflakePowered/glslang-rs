@@ -170,7 +170,7 @@ mod tests {
     use super::*;
     use crate::ctypes::ShaderStage;
     use crate::shader::{CompilerOptions, OpenGlVersion, ShaderInput, ShaderSource, Target};
-    use crate::{GlslProfile, SourceLanguage};
+    use crate::{GlslProfile, ShaderMessage, SourceLanguage};
     use rspirv::binary::Disassemble;
 
     #[test]
@@ -198,7 +198,7 @@ void main() {
             None,
         )
             .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(&compiler, input).expect("shader init");
 
         let program = Program::new(&compiler);
         // program.add_shader(&shader);
@@ -281,6 +281,7 @@ void main() {
                     version: OpenGlVersion::OpenGL4_5,
                     spirv_version: None,
                 },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: Some((890, GlslProfile::None)),
             },
             None,
@@ -314,6 +315,7 @@ void main() {
             &CompilerOptions {
                 source_language: SourceLanguage::GLSL,
                 target: Target::None(None),
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: None,
             },
             None,
