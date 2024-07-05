@@ -411,10 +411,24 @@ impl Target {
 #[derive(Debug, Clone)]
 pub struct ShaderMessage(pub i32);
 
-impl ShaderMessage {
+impl ShaderMessage {    
     pub const DEFAULT: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEFAULT.0);
-    pub const DEBUG_INFO: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEBUG_INFO.0);
+    pub const RELAXED_ERRORS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::RELAXED_ERRORS.0);
+    pub const SUPPRESS_WARNINGS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::SUPPRESS_WARNINGS.0);
+    pub const AST: ShaderMessage = ShaderMessage(sys::glslang_messages_t::AST.0);
+    pub const SPV_RULES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::SPV_RULES.0);
+    pub const VULKAN_RULES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::VULKAN_RULES.0);
+    pub const ONLY_PREPROCESSOR: ShaderMessage = ShaderMessage(sys::glslang_messages_t::ONLY_PREPROCESSOR.0);
+    pub const READ_HLSL: ShaderMessage = ShaderMessage(sys::glslang_messages_t::READ_HLSL.0);
     pub const CASCADING_ERRORS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::CASCADING_ERRORS.0);
+    pub const KEEP_UNCALLED: ShaderMessage = ShaderMessage(sys::glslang_messages_t::KEEP_UNCALLED.0);
+    pub const HLSL_OFFSETS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_OFFSETS.0);
+    pub const DEBUG_INFO: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEBUG_INFO.0);
+    pub const HLSL_ENABLE_16BIT_TYPES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_ENABLE_16BIT_TYPES.0);
+    pub const HLSL_LEGALIZATION: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_LEGALIZATION.0);
+    pub const HLSL_DX9_COMPATIBLE: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_DX9_COMPATIBLE.0);
+    pub const BUILTIN_SYMBOL_TABLE: ShaderMessage = ShaderMessage(sys::glslang_messages_t::BUILTIN_SYMBOL_TABLE.0);
+    pub const ENHANCED: ShaderMessage = ShaderMessage(sys::glslang_messages_t::ENHANCED.0);
 
     pub fn convert(&self) -> sys::glslang_messages_t {
         sys::glslang_messages_t(self.0)
