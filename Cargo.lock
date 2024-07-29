@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "bindings_generator"
-version = "0.1.0"
+version = "0.3.3"
 dependencies = [
  "bindgen",
  "cmake",
@@ -113,7 +113,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "glslang"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "glslang-sys",
  "once_cell",
@@ -124,7 +124,7 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "cc",
  "glob",
