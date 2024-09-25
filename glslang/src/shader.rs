@@ -6,9 +6,8 @@ use crate::{include, limits, limits::ResourceLimits, Compiler};
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use std::ffi::{c_void, CStr, CString};
-use std::ops::BitOr;
 use std::ptr::NonNull;
-
+use bitflags::bitflags;
 use crate::{GlslProfile, SourceLanguage, SpirvVersion};
 
 /// A handle to a shader in the glslang compiler.
@@ -248,18 +247,25 @@ pub struct ShaderInput<'a> {
 
 /// Vulkan version
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[non_exhaustive]
 pub enum VulkanVersion {
+    /// Vulkan 1.0
     Vulkan1_0,
+    /// Vulkan 1.1
     Vulkan1_1,
+    /// Vulkan 1.2
     Vulkan1_2,
+    /// Vulkan 1.3
     Vulkan1_3,
 }
 
 /// OpenGL Version
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[non_exhaustive]
 pub enum OpenGlVersion {
+    /// OpenGL 4.5
     OpenGL4_5,
 }
 
@@ -408,51 +414,49 @@ impl Target {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ShaderMessage(pub i32);
-
-impl ShaderMessage {    
-    pub const DEFAULT: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEFAULT.0);
-    pub const RELAXED_ERRORS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::RELAXED_ERRORS.0);
-    pub const SUPPRESS_WARNINGS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::SUPPRESS_WARNINGS.0);
-    pub const AST: ShaderMessage = ShaderMessage(sys::glslang_messages_t::AST.0);
-    pub const SPV_RULES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::SPV_RULES.0);
-    pub const VULKAN_RULES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::VULKAN_RULES.0);
-    pub const ONLY_PREPROCESSOR: ShaderMessage = ShaderMessage(sys::glslang_messages_t::ONLY_PREPROCESSOR.0);
-    pub const READ_HLSL: ShaderMessage = ShaderMessage(sys::glslang_messages_t::READ_HLSL.0);
-    pub const CASCADING_ERRORS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::CASCADING_ERRORS.0);
-    pub const KEEP_UNCALLED: ShaderMessage = ShaderMessage(sys::glslang_messages_t::KEEP_UNCALLED.0);
-    pub const HLSL_OFFSETS: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_OFFSETS.0);
-    pub const DEBUG_INFO: ShaderMessage = ShaderMessage(sys::glslang_messages_t::DEBUG_INFO.0);
-    pub const HLSL_ENABLE_16BIT_TYPES: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_ENABLE_16BIT_TYPES.0);
-    pub const HLSL_LEGALIZATION: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_LEGALIZATION.0);
-    pub const HLSL_DX9_COMPATIBLE: ShaderMessage = ShaderMessage(sys::glslang_messages_t::HLSL_DX9_COMPATIBLE.0);
-    pub const BUILTIN_SYMBOL_TABLE: ShaderMessage = ShaderMessage(sys::glslang_messages_t::BUILTIN_SYMBOL_TABLE.0);
-    pub const ENHANCED: ShaderMessage = ShaderMessage(sys::glslang_messages_t::ENHANCED.0);
-
-    pub fn convert(&self) -> sys::glslang_messages_t {
-        sys::glslang_messages_t(self.0)
+bitflags! {
+    /// Shader messages from the glslang compiler
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+    pub struct ShaderMessage: i32 {
+        const DEFAULT = sys::glslang_messages_t::DEFAULT.0;
+        const RELAXED_ERRORS = sys::glslang_messages_t::RELAXED_ERRORS.0;
+        const SUPPRESS_WARNINGS = sys::glslang_messages_t::SUPPRESS_WARNINGS.0;
+        const AST = sys::glslang_messages_t::AST.0;
+        const SPV_RULES = sys::glslang_messages_t::SPV_RULES.0;
+        const VULKAN_RULES = sys::glslang_messages_t::VULKAN_RULES.0;
+        const ONLY_PREPROCESSOR = sys::glslang_messages_t::ONLY_PREPROCESSOR.0;
+        const READ_HLSL = sys::glslang_messages_t::READ_HLSL.0;
+        const CASCADING_ERRORS = sys::glslang_messages_t::CASCADING_ERRORS.0;
+        const KEEP_UNCALLED = sys::glslang_messages_t::KEEP_UNCALLED.0;
+        const HLSL_OFFSETS = sys::glslang_messages_t::HLSL_OFFSETS.0;
+        const DEBUG_INFO = sys::glslang_messages_t::DEBUG_INFO.0;
+        const HLSL_ENABLE_16BIT_TYPES = sys::glslang_messages_t::HLSL_ENABLE_16BIT_TYPES.0;
+        const HLSL_LEGALIZATION = sys::glslang_messages_t::HLSL_LEGALIZATION.0;
+        const HLSL_DX9_COMPATIBLE = sys::glslang_messages_t::HLSL_DX9_COMPATIBLE.0;
+        const BUILTIN_SYMBOL_TABLE = sys::glslang_messages_t::BUILTIN_SYMBOL_TABLE.0;
+        const ENHANCED = sys::glslang_messages_t::ENHANCED.0;
+        const ABSOLUTE_PATH = sys::glslang_messages_t::ABSOLUTE_PATH.0;
+        const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
     }
 }
-impl BitOr for ShaderMessage {
-    type Output = Self;
 
-    // rhs is the "right-hand side" of the expression `a | b`
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+impl From<ShaderMessage> for sys::glslang_messages_t {
+    fn from(value: ShaderMessage) -> Self {
+        sys::glslang_messages_t(value.bits())
     }
 }
 
 /// Options to configure the compilation of a shader.
 #[derive(Debug, Clone)]
 pub struct CompilerOptions {
+    /// The source language of the shader.
     pub source_language: SourceLanguage,
     /// The target
     pub target: Target,
     /// The GLSL version profile.
     /// If specified, will force the specified profile on compilation.
     pub version_profile: Option<(i32, GlslProfile)>,
-    // Messages to be passed to compiler
+    /// Messages for glslang to emit
     pub messages: ShaderMessage,
 }
 
@@ -518,7 +522,7 @@ impl<'a> ShaderInput<'a> {
                 default_profile: options.version_profile.map_or(GlslProfile::None, |o| o.1),
                 force_default_version_and_profile: options.version_profile.map_or(0, |_| 1),
                 forward_compatible: 0,
-                messages: options.messages.convert(),
+                messages: options.messages.into(),
                 resource: &resource.0,
                 callbacks: glsl_include_callbacks_s {
                     include_system: Some(include::_glslang_rs_sys_func),
