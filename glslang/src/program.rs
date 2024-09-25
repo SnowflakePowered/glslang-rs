@@ -284,7 +284,7 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
-                version_profile: Some((890, GlslProfile::None)),
+                version_profile: Some((120, GlslProfile::None)),
             },
             None,
         )
