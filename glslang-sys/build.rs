@@ -24,6 +24,9 @@ pub fn main() {
         return;
     }
 
+    println!("cargo:rerun-if-changed=native/glslang");
+    println!("cargo:rerun-if-changed=native/build_info");
+
     let mut glslang_build = cc::Build::new();
     glslang_build
         .cpp(true)
