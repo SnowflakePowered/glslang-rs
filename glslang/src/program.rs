@@ -130,7 +130,6 @@ impl<'a> Program<'a> {
             emit_nonsemantic_shader_debug_info: false,
             emit_nonsemantic_shader_debug_source: false,
             compile_only: false,
-            optimize_allow_expanded_id_bound: false,
         };
 
         // We don't support SPIRV compile options because nearly all of them (except for generateDebugInfo),

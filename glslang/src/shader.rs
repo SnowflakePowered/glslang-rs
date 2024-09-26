@@ -436,7 +436,6 @@ bitflags! {
         const BUILTIN_SYMBOL_TABLE = sys::glslang_messages_t::BUILTIN_SYMBOL_TABLE.0;
         const ENHANCED = sys::glslang_messages_t::ENHANCED.0;
         const ABSOLUTE_PATH = sys::glslang_messages_t::ABSOLUTE_PATH.0;
-        const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
     }
 }
 
