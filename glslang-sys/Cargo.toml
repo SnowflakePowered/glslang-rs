@@ -1,6 +1,6 @@
 [package]
 name = "glslang-sys"
-version = "0.5.1+fa9c3de"
+version = "0.5.2+fa9c3de"
 edition = "2021"
 
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]

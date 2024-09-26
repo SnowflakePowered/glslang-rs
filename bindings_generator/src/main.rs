@@ -5,6 +5,7 @@ use std::env;
 fn main() {
     let bindings = bindgen::Builder::default()
         .header("glslang-sys/native/wrapper.h")
+        .layout_tests(false)
         .parse_callbacks(Box::new(callbacks::GlslangCallbacks))
         .allowlist_type("glslang_.*")
         .allowlist_type("glsl_.*")

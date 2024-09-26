@@ -189,9 +189,6 @@ impl glslang_messages_t {
 impl glslang_messages_t {
     pub const ABSOLUTE_PATH: glslang_messages_t = glslang_messages_t(65536);
 }
-impl glslang_messages_t {
-    pub const DISPLAY_ERROR_COLUMN: glslang_messages_t = glslang_messages_t(131072);
-}
 impl ::std::ops::BitOr<glslang_messages_t> for glslang_messages_t {
     type Output = Self;
     #[inline]
@@ -294,40 +291,6 @@ pub struct glslang_program_s {
 pub type glslang_program_t = glslang_program_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct glslang_mapper_s {
-    _unused: [u8; 0],
-}
-pub type glslang_mapper_t = glslang_mapper_s;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct glslang_resolver_s {
-    _unused: [u8; 0],
-}
-pub type glslang_resolver_t = glslang_resolver_s;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct glslang_version_s {
-    pub major: ::std::os::raw::c_int,
-    pub minor: ::std::os::raw::c_int,
-    pub patch: ::std::os::raw::c_int,
-    pub flavor: *const ::std::os::raw::c_char,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_version_s"][::std::mem::size_of::<glslang_version_s>() - 24usize];
-    ["Alignment of glslang_version_s"][::std::mem::align_of::<glslang_version_s>() - 8usize];
-    ["Offset of field: glslang_version_s::major"]
-        [::std::mem::offset_of!(glslang_version_s, major) - 0usize];
-    ["Offset of field: glslang_version_s::minor"]
-        [::std::mem::offset_of!(glslang_version_s, minor) - 4usize];
-    ["Offset of field: glslang_version_s::patch"]
-        [::std::mem::offset_of!(glslang_version_s, patch) - 8usize];
-    ["Offset of field: glslang_version_s::flavor"]
-        [::std::mem::offset_of!(glslang_version_s, flavor) - 16usize];
-};
-pub type glslang_version_t = glslang_version_s;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct glslang_limits_s {
     pub non_inductive_for_loops: bool,
     pub while_loops: bool,
@@ -339,33 +302,6 @@ pub struct glslang_limits_s {
     pub general_variable_indexing: bool,
     pub general_constant_matrix_vector_indexing: bool,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_limits_s"][::std::mem::size_of::<glslang_limits_s>() - 9usize];
-    ["Alignment of glslang_limits_s"][::std::mem::align_of::<glslang_limits_s>() - 1usize];
-    ["Offset of field: glslang_limits_s::non_inductive_for_loops"]
-        [::std::mem::offset_of!(glslang_limits_s, non_inductive_for_loops) - 0usize];
-    ["Offset of field: glslang_limits_s::while_loops"]
-        [::std::mem::offset_of!(glslang_limits_s, while_loops) - 1usize];
-    ["Offset of field: glslang_limits_s::do_while_loops"]
-        [::std::mem::offset_of!(glslang_limits_s, do_while_loops) - 2usize];
-    ["Offset of field: glslang_limits_s::general_uniform_indexing"]
-        [::std::mem::offset_of!(glslang_limits_s, general_uniform_indexing) - 3usize];
-    ["Offset of field: glslang_limits_s::general_attribute_matrix_vector_indexing"][::std::mem::offset_of!(
-        glslang_limits_s,
-        general_attribute_matrix_vector_indexing
-    ) - 4usize];
-    ["Offset of field: glslang_limits_s::general_varying_indexing"]
-        [::std::mem::offset_of!(glslang_limits_s, general_varying_indexing) - 5usize];
-    ["Offset of field: glslang_limits_s::general_sampler_indexing"]
-        [::std::mem::offset_of!(glslang_limits_s, general_sampler_indexing) - 6usize];
-    ["Offset of field: glslang_limits_s::general_variable_indexing"]
-        [::std::mem::offset_of!(glslang_limits_s, general_variable_indexing) - 7usize];
-    ["Offset of field: glslang_limits_s::general_constant_matrix_vector_indexing"][::std::mem::offset_of!(
-        glslang_limits_s,
-        general_constant_matrix_vector_indexing
-    ) - 8usize];
-};
 pub type glslang_limits_t = glslang_limits_s;
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -480,270 +416,6 @@ pub union glslang_resource_s__bindgen_ty_1 {
     pub max_dual_source_draw_buffers_ext: ::std::os::raw::c_int,
     pub maxDualSourceDrawBuffersEXT: ::std::os::raw::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_resource_s__bindgen_ty_1"]
-        [::std::mem::size_of::<glslang_resource_s__bindgen_ty_1>() - 4usize];
-    ["Alignment of glslang_resource_s__bindgen_ty_1"]
-        [::std::mem::align_of::<glslang_resource_s__bindgen_ty_1>() - 4usize];
-    ["Offset of field: glslang_resource_s__bindgen_ty_1::max_dual_source_draw_buffers_ext"][::std::mem::offset_of!(
-        glslang_resource_s__bindgen_ty_1,
-        max_dual_source_draw_buffers_ext
-    )
-        - 0usize];
-    ["Offset of field: glslang_resource_s__bindgen_ty_1::maxDualSourceDrawBuffersEXT"][::std::mem::offset_of!(
-        glslang_resource_s__bindgen_ty_1,
-        maxDualSourceDrawBuffersEXT
-    ) - 0usize];
-};
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_resource_s"][::std::mem::size_of::<glslang_resource_s>() - 420usize];
-    ["Alignment of glslang_resource_s"][::std::mem::align_of::<glslang_resource_s>() - 4usize];
-    ["Offset of field: glslang_resource_s::max_lights"]
-        [::std::mem::offset_of!(glslang_resource_s, max_lights) - 0usize];
-    ["Offset of field: glslang_resource_s::max_clip_planes"]
-        [::std::mem::offset_of!(glslang_resource_s, max_clip_planes) - 4usize];
-    ["Offset of field: glslang_resource_s::max_texture_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_texture_units) - 8usize];
-    ["Offset of field: glslang_resource_s::max_texture_coords"]
-        [::std::mem::offset_of!(glslang_resource_s, max_texture_coords) - 12usize];
-    ["Offset of field: glslang_resource_s::max_vertex_attribs"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_attribs) - 16usize];
-    ["Offset of field: glslang_resource_s::max_vertex_uniform_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_uniform_components) - 20usize];
-    ["Offset of field: glslang_resource_s::max_varying_floats"]
-        [::std::mem::offset_of!(glslang_resource_s, max_varying_floats) - 24usize];
-    ["Offset of field: glslang_resource_s::max_vertex_texture_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_texture_image_units) - 28usize];
-    ["Offset of field: glslang_resource_s::max_combined_texture_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_combined_texture_image_units) - 32usize];
-    ["Offset of field: glslang_resource_s::max_texture_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_texture_image_units) - 36usize];
-    ["Offset of field: glslang_resource_s::max_fragment_uniform_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_uniform_components) - 40usize];
-    ["Offset of field: glslang_resource_s::max_draw_buffers"]
-        [::std::mem::offset_of!(glslang_resource_s, max_draw_buffers) - 44usize];
-    ["Offset of field: glslang_resource_s::max_vertex_uniform_vectors"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_uniform_vectors) - 48usize];
-    ["Offset of field: glslang_resource_s::max_varying_vectors"]
-        [::std::mem::offset_of!(glslang_resource_s, max_varying_vectors) - 52usize];
-    ["Offset of field: glslang_resource_s::max_fragment_uniform_vectors"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_uniform_vectors) - 56usize];
-    ["Offset of field: glslang_resource_s::max_vertex_output_vectors"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_output_vectors) - 60usize];
-    ["Offset of field: glslang_resource_s::max_fragment_input_vectors"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_input_vectors) - 64usize];
-    ["Offset of field: glslang_resource_s::min_program_texel_offset"]
-        [::std::mem::offset_of!(glslang_resource_s, min_program_texel_offset) - 68usize];
-    ["Offset of field: glslang_resource_s::max_program_texel_offset"]
-        [::std::mem::offset_of!(glslang_resource_s, max_program_texel_offset) - 72usize];
-    ["Offset of field: glslang_resource_s::max_clip_distances"]
-        [::std::mem::offset_of!(glslang_resource_s, max_clip_distances) - 76usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_count_x"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_count_x) - 80usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_count_y"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_count_y) - 84usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_count_z"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_count_z) - 88usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_size_x"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_size_x) - 92usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_size_y"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_size_y) - 96usize];
-    ["Offset of field: glslang_resource_s::max_compute_work_group_size_z"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_work_group_size_z) - 100usize];
-    ["Offset of field: glslang_resource_s::max_compute_uniform_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_uniform_components) - 104usize];
-    ["Offset of field: glslang_resource_s::max_compute_texture_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_texture_image_units) - 108usize];
-    ["Offset of field: glslang_resource_s::max_compute_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_image_uniforms) - 112usize];
-    ["Offset of field: glslang_resource_s::max_compute_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_atomic_counters) - 116usize];
-    ["Offset of field: glslang_resource_s::max_compute_atomic_counter_buffers"]
-        [::std::mem::offset_of!(glslang_resource_s, max_compute_atomic_counter_buffers) - 120usize];
-    ["Offset of field: glslang_resource_s::max_varying_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_varying_components) - 124usize];
-    ["Offset of field: glslang_resource_s::max_vertex_output_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_output_components) - 128usize];
-    ["Offset of field: glslang_resource_s::max_geometry_input_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_input_components) - 132usize];
-    ["Offset of field: glslang_resource_s::max_geometry_output_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_output_components) - 136usize];
-    ["Offset of field: glslang_resource_s::max_fragment_input_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_input_components) - 140usize];
-    ["Offset of field: glslang_resource_s::max_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_image_units) - 144usize];
-    ["Offset of field: glslang_resource_s::max_combined_image_units_and_fragment_outputs"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_combined_image_units_and_fragment_outputs
-    )
-        - 148usize];
-    ["Offset of field: glslang_resource_s::max_combined_shader_output_resources"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_combined_shader_output_resources
-    ) - 152usize];
-    ["Offset of field: glslang_resource_s::max_image_samples"]
-        [::std::mem::offset_of!(glslang_resource_s, max_image_samples) - 156usize];
-    ["Offset of field: glslang_resource_s::max_vertex_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_image_uniforms) - 160usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_control_image_uniforms) - 164usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_evaluation_image_uniforms) - 168usize];
-    ["Offset of field: glslang_resource_s::max_geometry_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_image_uniforms) - 172usize];
-    ["Offset of field: glslang_resource_s::max_fragment_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_image_uniforms) - 176usize];
-    ["Offset of field: glslang_resource_s::max_combined_image_uniforms"]
-        [::std::mem::offset_of!(glslang_resource_s, max_combined_image_uniforms) - 180usize];
-    ["Offset of field: glslang_resource_s::max_geometry_texture_image_units"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_texture_image_units) - 184usize];
-    ["Offset of field: glslang_resource_s::max_geometry_output_vertices"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_output_vertices) - 188usize];
-    ["Offset of field: glslang_resource_s::max_geometry_total_output_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_geometry_total_output_components
-    ) - 192usize];
-    ["Offset of field: glslang_resource_s::max_geometry_uniform_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_uniform_components) - 196usize];
-    ["Offset of field: glslang_resource_s::max_geometry_varying_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_varying_components) - 200usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_input_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_control_input_components) - 204usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_output_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_control_output_components) - 208usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_texture_image_units"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_control_texture_image_units
-    ) - 212usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_uniform_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_control_uniform_components
-    ) - 216usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_total_output_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_control_total_output_components
-    ) - 220usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_input_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_input_components
-    ) - 224usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_output_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_output_components
-    ) - 228usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_texture_image_units"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_texture_image_units
-    ) - 232usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_uniform_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_uniform_components
-    ) - 236usize];
-    ["Offset of field: glslang_resource_s::max_tess_patch_components"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_patch_components) - 240usize];
-    ["Offset of field: glslang_resource_s::max_patch_vertices"]
-        [::std::mem::offset_of!(glslang_resource_s, max_patch_vertices) - 244usize];
-    ["Offset of field: glslang_resource_s::max_tess_gen_level"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_gen_level) - 248usize];
-    ["Offset of field: glslang_resource_s::max_viewports"]
-        [::std::mem::offset_of!(glslang_resource_s, max_viewports) - 252usize];
-    ["Offset of field: glslang_resource_s::max_vertex_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_atomic_counters) - 256usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_tess_control_atomic_counters) - 260usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_atomic_counters"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_atomic_counters
-    ) - 264usize];
-    ["Offset of field: glslang_resource_s::max_geometry_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_geometry_atomic_counters) - 268usize];
-    ["Offset of field: glslang_resource_s::max_fragment_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_fragment_atomic_counters) - 272usize];
-    ["Offset of field: glslang_resource_s::max_combined_atomic_counters"]
-        [::std::mem::offset_of!(glslang_resource_s, max_combined_atomic_counters) - 276usize];
-    ["Offset of field: glslang_resource_s::max_atomic_counter_bindings"]
-        [::std::mem::offset_of!(glslang_resource_s, max_atomic_counter_bindings) - 280usize];
-    ["Offset of field: glslang_resource_s::max_vertex_atomic_counter_buffers"]
-        [::std::mem::offset_of!(glslang_resource_s, max_vertex_atomic_counter_buffers) - 284usize];
-    ["Offset of field: glslang_resource_s::max_tess_control_atomic_counter_buffers"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_control_atomic_counter_buffers
-    ) - 288usize];
-    ["Offset of field: glslang_resource_s::max_tess_evaluation_atomic_counter_buffers"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_tess_evaluation_atomic_counter_buffers
-    )
-        - 292usize];
-    ["Offset of field: glslang_resource_s::max_geometry_atomic_counter_buffers"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_geometry_atomic_counter_buffers
-    ) - 296usize];
-    ["Offset of field: glslang_resource_s::max_fragment_atomic_counter_buffers"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_fragment_atomic_counter_buffers
-    ) - 300usize];
-    ["Offset of field: glslang_resource_s::max_combined_atomic_counter_buffers"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_combined_atomic_counter_buffers
-    ) - 304usize];
-    ["Offset of field: glslang_resource_s::max_atomic_counter_buffer_size"]
-        [::std::mem::offset_of!(glslang_resource_s, max_atomic_counter_buffer_size) - 308usize];
-    ["Offset of field: glslang_resource_s::max_transform_feedback_buffers"]
-        [::std::mem::offset_of!(glslang_resource_s, max_transform_feedback_buffers) - 312usize];
-    ["Offset of field: glslang_resource_s::max_transform_feedback_interleaved_components"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_transform_feedback_interleaved_components
-    )
-        - 316usize];
-    ["Offset of field: glslang_resource_s::max_cull_distances"]
-        [::std::mem::offset_of!(glslang_resource_s, max_cull_distances) - 320usize];
-    ["Offset of field: glslang_resource_s::max_combined_clip_and_cull_distances"][::std::mem::offset_of!(
-        glslang_resource_s,
-        max_combined_clip_and_cull_distances
-    ) - 324usize];
-    ["Offset of field: glslang_resource_s::max_samples"]
-        [::std::mem::offset_of!(glslang_resource_s, max_samples) - 328usize];
-    ["Offset of field: glslang_resource_s::max_mesh_output_vertices_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_output_vertices_nv) - 332usize];
-    ["Offset of field: glslang_resource_s::max_mesh_output_primitives_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_output_primitives_nv) - 336usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_x_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_x_nv) - 340usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_y_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_y_nv) - 344usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_z_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_z_nv) - 348usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_x_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_x_nv) - 352usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_y_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_y_nv) - 356usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_z_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_z_nv) - 360usize];
-    ["Offset of field: glslang_resource_s::max_mesh_view_count_nv"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_view_count_nv) - 364usize];
-    ["Offset of field: glslang_resource_s::max_mesh_output_vertices_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_output_vertices_ext) - 368usize];
-    ["Offset of field: glslang_resource_s::max_mesh_output_primitives_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_output_primitives_ext) - 372usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_x_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_x_ext) - 376usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_y_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_y_ext) - 380usize];
-    ["Offset of field: glslang_resource_s::max_mesh_work_group_size_z_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_work_group_size_z_ext) - 384usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_x_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_x_ext) - 388usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_y_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_y_ext) - 392usize];
-    ["Offset of field: glslang_resource_s::max_task_work_group_size_z_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_task_work_group_size_z_ext) - 396usize];
-    ["Offset of field: glslang_resource_s::max_mesh_view_count_ext"]
-        [::std::mem::offset_of!(glslang_resource_s, max_mesh_view_count_ext) - 400usize];
-    ["Offset of field: glslang_resource_s::limits"]
-        [::std::mem::offset_of!(glslang_resource_s, limits) - 408usize];
-};
 pub type glslang_resource_t = glslang_resource_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -752,18 +424,6 @@ pub struct glsl_include_result_s {
     pub header_data: *const ::std::os::raw::c_char,
     pub header_length: usize,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glsl_include_result_s"][::std::mem::size_of::<glsl_include_result_s>() - 24usize];
-    ["Alignment of glsl_include_result_s"]
-        [::std::mem::align_of::<glsl_include_result_s>() - 8usize];
-    ["Offset of field: glsl_include_result_s::header_name"]
-        [::std::mem::offset_of!(glsl_include_result_s, header_name) - 0usize];
-    ["Offset of field: glsl_include_result_s::header_data"]
-        [::std::mem::offset_of!(glsl_include_result_s, header_data) - 8usize];
-    ["Offset of field: glsl_include_result_s::header_length"]
-        [::std::mem::offset_of!(glsl_include_result_s, header_length) - 16usize];
-};
 pub type glsl_include_result_t = glsl_include_result_s;
 pub type glsl_include_local_func = ::std::option::Option<
     unsafe extern "C" fn(
@@ -794,19 +454,6 @@ pub struct glsl_include_callbacks_s {
     pub include_local: glsl_include_local_func,
     pub free_include_result: glsl_free_include_result_func,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glsl_include_callbacks_s"]
-        [::std::mem::size_of::<glsl_include_callbacks_s>() - 24usize];
-    ["Alignment of glsl_include_callbacks_s"]
-        [::std::mem::align_of::<glsl_include_callbacks_s>() - 8usize];
-    ["Offset of field: glsl_include_callbacks_s::include_system"]
-        [::std::mem::offset_of!(glsl_include_callbacks_s, include_system) - 0usize];
-    ["Offset of field: glsl_include_callbacks_s::include_local"]
-        [::std::mem::offset_of!(glsl_include_callbacks_s, include_local) - 8usize];
-    ["Offset of field: glsl_include_callbacks_s::free_include_result"]
-        [::std::mem::offset_of!(glsl_include_callbacks_s, free_include_result) - 16usize];
-};
 pub type glsl_include_callbacks_t = glsl_include_callbacks_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -828,41 +475,6 @@ pub struct glslang_input_s {
     pub callbacks: glsl_include_callbacks_t,
     pub callbacks_ctx: *mut ::std::os::raw::c_void,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_input_s"][::std::mem::size_of::<glslang_input_s>() - 96usize];
-    ["Alignment of glslang_input_s"][::std::mem::align_of::<glslang_input_s>() - 8usize];
-    ["Offset of field: glslang_input_s::language"]
-        [::std::mem::offset_of!(glslang_input_s, language) - 0usize];
-    ["Offset of field: glslang_input_s::stage"]
-        [::std::mem::offset_of!(glslang_input_s, stage) - 4usize];
-    ["Offset of field: glslang_input_s::client"]
-        [::std::mem::offset_of!(glslang_input_s, client) - 8usize];
-    ["Offset of field: glslang_input_s::client_version"]
-        [::std::mem::offset_of!(glslang_input_s, client_version) - 12usize];
-    ["Offset of field: glslang_input_s::target_language"]
-        [::std::mem::offset_of!(glslang_input_s, target_language) - 16usize];
-    ["Offset of field: glslang_input_s::target_language_version"]
-        [::std::mem::offset_of!(glslang_input_s, target_language_version) - 20usize];
-    ["Offset of field: glslang_input_s::code"]
-        [::std::mem::offset_of!(glslang_input_s, code) - 24usize];
-    ["Offset of field: glslang_input_s::default_version"]
-        [::std::mem::offset_of!(glslang_input_s, default_version) - 32usize];
-    ["Offset of field: glslang_input_s::default_profile"]
-        [::std::mem::offset_of!(glslang_input_s, default_profile) - 36usize];
-    ["Offset of field: glslang_input_s::force_default_version_and_profile"]
-        [::std::mem::offset_of!(glslang_input_s, force_default_version_and_profile) - 40usize];
-    ["Offset of field: glslang_input_s::forward_compatible"]
-        [::std::mem::offset_of!(glslang_input_s, forward_compatible) - 44usize];
-    ["Offset of field: glslang_input_s::messages"]
-        [::std::mem::offset_of!(glslang_input_s, messages) - 48usize];
-    ["Offset of field: glslang_input_s::resource"]
-        [::std::mem::offset_of!(glslang_input_s, resource) - 56usize];
-    ["Offset of field: glslang_input_s::callbacks"]
-        [::std::mem::offset_of!(glslang_input_s, callbacks) - 64usize];
-    ["Offset of field: glslang_input_s::callbacks_ctx"]
-        [::std::mem::offset_of!(glslang_input_s, callbacks_ctx) - 88usize];
-};
 pub type glslang_input_t = glslang_input_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -876,42 +488,8 @@ pub struct glslang_spv_options_s {
     pub emit_nonsemantic_shader_debug_info: bool,
     pub emit_nonsemantic_shader_debug_source: bool,
     pub compile_only: bool,
-    pub optimize_allow_expanded_id_bound: bool,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of glslang_spv_options_s"][::std::mem::size_of::<glslang_spv_options_s>() - 10usize];
-    ["Alignment of glslang_spv_options_s"]
-        [::std::mem::align_of::<glslang_spv_options_s>() - 1usize];
-    ["Offset of field: glslang_spv_options_s::generate_debug_info"]
-        [::std::mem::offset_of!(glslang_spv_options_s, generate_debug_info) - 0usize];
-    ["Offset of field: glslang_spv_options_s::strip_debug_info"]
-        [::std::mem::offset_of!(glslang_spv_options_s, strip_debug_info) - 1usize];
-    ["Offset of field: glslang_spv_options_s::disable_optimizer"]
-        [::std::mem::offset_of!(glslang_spv_options_s, disable_optimizer) - 2usize];
-    ["Offset of field: glslang_spv_options_s::optimize_size"]
-        [::std::mem::offset_of!(glslang_spv_options_s, optimize_size) - 3usize];
-    ["Offset of field: glslang_spv_options_s::disassemble"]
-        [::std::mem::offset_of!(glslang_spv_options_s, disassemble) - 4usize];
-    ["Offset of field: glslang_spv_options_s::validate"]
-        [::std::mem::offset_of!(glslang_spv_options_s, validate) - 5usize];
-    ["Offset of field: glslang_spv_options_s::emit_nonsemantic_shader_debug_info"][::std::mem::offset_of!(
-        glslang_spv_options_s,
-        emit_nonsemantic_shader_debug_info
-    ) - 6usize];
-    ["Offset of field: glslang_spv_options_s::emit_nonsemantic_shader_debug_source"][::std::mem::offset_of!(
-        glslang_spv_options_s,
-        emit_nonsemantic_shader_debug_source
-    ) - 7usize];
-    ["Offset of field: glslang_spv_options_s::compile_only"]
-        [::std::mem::offset_of!(glslang_spv_options_s, compile_only) - 8usize];
-    ["Offset of field: glslang_spv_options_s::optimize_allow_expanded_id_bound"]
-        [::std::mem::offset_of!(glslang_spv_options_s, optimize_allow_expanded_id_bound) - 9usize];
-};
 pub type glslang_spv_options_t = glslang_spv_options_s;
-extern "C" {
-    pub fn glslang_get_version(version: *mut glslang_version_t);
-}
 extern "C" {
     pub fn glslang_initialize_process() -> ::std::os::raw::c_int;
 }
@@ -958,19 +536,6 @@ extern "C" {
     );
 }
 extern "C" {
-    pub fn glslang_shader_set_default_uniform_block_set_and_binding(
-        shader: *mut glslang_shader_t,
-        set: ::std::os::raw::c_uint,
-        binding: ::std::os::raw::c_uint,
-    );
-}
-extern "C" {
-    pub fn glslang_shader_set_default_uniform_block_name(
-        shader: *mut glslang_shader_t,
-        name: *const ::std::os::raw::c_char,
-    );
-}
-extern "C" {
     pub fn glslang_shader_preprocess(
         shader: *mut glslang_shader_t,
         input: *const glslang_input_t,
@@ -986,12 +551,6 @@ extern "C" {
     pub fn glslang_shader_get_preprocessed_code(
         shader: *mut glslang_shader_t,
     ) -> *const ::std::os::raw::c_char;
-}
-extern "C" {
-    pub fn glslang_shader_set_preprocessed_code(
-        shader: *mut glslang_shader_t,
-        code: *const ::std::os::raw::c_char,
-    );
 }
 extern "C" {
     pub fn glslang_shader_get_info_log(
@@ -1040,13 +599,6 @@ extern "C" {
     pub fn glslang_program_map_io(program: *mut glslang_program_t) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn glslang_program_map_io_with_resolver_and_mapper(
-        program: *mut glslang_program_t,
-        resolver: *mut glslang_resolver_t,
-        mapper: *mut glslang_mapper_t,
-    ) -> ::std::os::raw::c_int;
-}
-extern "C" {
     pub fn glslang_program_SPIRV_generate(program: *mut glslang_program_t, stage: glslang_stage_t);
 }
 extern "C" {
@@ -1084,19 +636,4 @@ extern "C" {
     pub fn glslang_program_get_info_debug_log(
         program: *mut glslang_program_t,
     ) -> *const ::std::os::raw::c_char;
-}
-extern "C" {
-    pub fn glslang_glsl_mapper_create() -> *mut glslang_mapper_t;
-}
-extern "C" {
-    pub fn glslang_glsl_mapper_delete(mapper: *mut glslang_mapper_t);
-}
-extern "C" {
-    pub fn glslang_glsl_resolver_create(
-        program: *mut glslang_program_t,
-        stage: glslang_stage_t,
-    ) -> *mut glslang_resolver_t;
-}
-extern "C" {
-    pub fn glslang_glsl_resolver_delete(resolver: *mut glslang_resolver_t);
 }
