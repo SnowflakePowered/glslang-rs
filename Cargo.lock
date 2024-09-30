@@ -105,7 +105,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "glslang"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "bitflags",
  "glslang-sys",
@@ -117,7 +117,7 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.5.2+fa9c3de"
+version = "0.6.1+46ef757"
 dependencies = [
  "cc",
  "glob",

@@ -31,6 +31,7 @@ pub fn main() {
     glslang_build
         .cpp(true)
         .std("c++17")
+        .define("ENABLE_SPIRV", "ON")
         .define("ENABLE_HLSL", "ON")
         .define("ENABLE_OPT", "OFF")
         .define("ENABLE_GLSLANG_BINARIES", "OFF")
