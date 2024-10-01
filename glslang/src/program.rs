@@ -493,5 +493,7 @@ void main() {
         )
         .expect("target");
         let _shader = Shader::new(&compiler, input).expect("shader init");
+        assert!(include_handler.header_included.len() == 1);
+        assert_eq!(include_handler.header_included[0], "custom_include.glsl", "");
     }
 }
