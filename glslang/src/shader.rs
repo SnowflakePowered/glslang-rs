@@ -3,13 +3,15 @@ use crate::error::GlslangError;
 use crate::error::GlslangError::ParseError;
 use crate::include::IncludeHandler;
 use crate::{include, limits, limits::ResourceLimits, Compiler};
+use crate::{GlslProfile, SourceLanguage, SpirvVersion};
+use bitflags::bitflags;
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
+use smartstring::{LazyCompact, SmartString};
+use std::borrow::Cow;
 use std::ffi::{c_void, CStr, CString};
 use std::ptr::NonNull;
-use bitflags::bitflags;
-use crate::{GlslProfile, SourceLanguage, SpirvVersion};
 
 /// A handle to a shader in the glslang compiler.
 pub struct Shader<'a> {
@@ -32,7 +34,8 @@ impl<'a> Shader<'a> {
             _compiler,
         };
 
-        let preamble = input.defines
+        let preamble = input
+            .defines
             .iter()
             .map(|(k, v)| format!("#define {} {}\n", k, v.clone().unwrap_or_default()))
             .collect::<Vec<String>>()
@@ -171,7 +174,7 @@ void main() {
             &source,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -244,7 +247,7 @@ pub struct ShaderInput<'a> {
     // Keep these alive.
     _source: &'a ShaderSource,
     _resource: &'a sys::glslang_resource_t,
-    pub(crate) defines: HashMap<String, Option<String>>,
+    pub(crate) defines: FxHashMap<SmartString<LazyCompact>, Option<SmartString<LazyCompact>>>,
     pub(crate) input: sys::glslang_input_t,
 }
 
@@ -357,16 +360,29 @@ impl Target {
 
         // only version 300, 310, 320 is supported for ES
         if profile == GlslProfile::ES && version != 300 && version != 310 && version != 320 {
-            return Err(GlslangError::VersionUnsupported(
-                version,
-                GlslProfile::ES,
-            ));
+            return Err(GlslangError::VersionUnsupported(version, GlslProfile::ES));
         }
 
-        if !matches!(version,
-            100 | 110 | 120 | 130 | 140 | 150 | 300 | 310 | 320 | 330 | 400 | 410 | 420 | 430 | 440 | 450 | 460
+        if !matches!(
+            version,
+            100 | 110
+                | 120
+                | 130
+                | 140
+                | 150
+                | 300
+                | 310
+                | 320
+                | 330
+                | 400
+                | 410
+                | 420
+                | 430
+                | 440
+                | 450
+                | 460
         ) {
-            return Err(GlslangError::VersionUnsupported(version, profile))
+            return Err(GlslangError::VersionUnsupported(version, profile));
         }
 
         match self {
@@ -472,7 +488,52 @@ impl Default for CompilerOptions {
                 spirv_version: SpirvVersion::SPIRV1_0,
             },
             version_profile: None,
-            messages: ShaderMessage::DEFAULT
+            messages: ShaderMessage::DEFAULT,
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+/// A `#define` macro to expand in the source code.
+pub struct MacroDefine<'a> {
+    /// The name of the macro.
+    name: Cow<'a, str>,
+    /// The replacement value of the macro, if any.
+    value: Option<Cow<'a, str>>,
+}
+
+impl MacroDefine<'_> {
+    /// Create a new define from string slices.
+    pub fn new_from_str<'a>(name: &'a str, value: Option<&'a str>) -> MacroDefine<'a> {
+        MacroDefine {
+            name: Cow::Borrowed(name),
+            value: value.map(Cow::Borrowed),
+        }
+    }
+
+    /// Create a new define from owned strings.
+    pub fn new_from_string(name: String, value: Option<String>) -> MacroDefine<'static> {
+        MacroDefine {
+            name: Cow::Owned(name),
+            value: value.map(Cow::Owned),
+        }
+    }
+}
+
+impl<'a> From<(&'a str, Option<&'a str>)> for MacroDefine<'a> {
+    fn from(value: (&'a str, Option<&'a str>)) -> Self {
+        MacroDefine {
+            name: Cow::Borrowed(value.0),
+            value: value.1.map(Cow::Borrowed),
+        }
+    }
+}
+
+impl<'a> From<&'a (&'a str, Option<&'a str>)> for MacroDefine<'a> {
+    fn from(value: &'a (&'a str, Option<&'a str>)) -> Self {
+        MacroDefine {
+            name: Cow::Borrowed(value.0),
+            value: value.1.map(Cow::Borrowed),
         }
     }
 }
@@ -480,26 +541,38 @@ impl Default for CompilerOptions {
 /// The input to a shader instance.
 impl<'a> ShaderInput<'a> {
     /// Create a new [`ShaderInput`](crate::ShaderInput) with default limits.
-    pub fn new(
+    pub fn new<'def, D: 'def>(
         source: &'a ShaderSource,
         stage: ShaderStage,
         options: &CompilerOptions,
-        defines: &[(&str, Option<&str>)],
+        defines: Option<&'def [D]>,
         include_handler: Option<&'a mut dyn IncludeHandler>,
-    ) -> Result<Self, GlslangError> {
-        Self::new_with_limits(source, &limits::DEFAULT_LIMITS, stage, options, defines, include_handler)
+    ) -> Result<Self, GlslangError>
+    where
+        MacroDefine<'def>: From<&'def D>,
+    {
+        Self::new_with_limits(
+            source,
+            &limits::DEFAULT_LIMITS,
+            stage,
+            options,
+            defines,
+            include_handler,
+        )
     }
 
-
     /// Create a new [`ShaderInput`](crate::ShaderInput) with the specified resource limits.
-    pub fn new_with_limits(
+    pub fn new_with_limits<'def, D: 'def>(
         source: &'a ShaderSource,
         resource: &'a ResourceLimits,
         stage: ShaderStage,
         options: &CompilerOptions,
-        defines: &[(&str, Option<&str>)],
+        defines: Option<&'def [D]>,
         include_handler: Option<&'a mut dyn IncludeHandler>,
-    ) -> Result<Self, GlslangError> {
+    ) -> Result<Self, GlslangError>
+    where
+        MacroDefine<'def>: From<&'def D>,
+    {
         let profile = options
             .version_profile
             .map_or_else(|| source.parse_profile(), |p| Some(p));
@@ -515,7 +588,18 @@ impl<'a> ShaderInput<'a> {
         Ok(Self {
             _source: source,
             _resource: &resource.0,
-            defines: defines.iter().map(|v| (String::from(v.0), v.1.map(|s| s.to_string()))).collect(),
+            defines: defines.map_or(FxHashMap::default(), |defines| {
+                defines
+                    .into_iter()
+                    .map(|v| {
+                        let v: MacroDefine = MacroDefine::from(v);
+                        (
+                            SmartString::from(v.name),
+                            v.value.map(|s| SmartString::from(s)),
+                        )
+                    })
+                    .collect()
+            }),
             input: sys::glslang_input_t {
                 language: options.source_language,
                 stage,

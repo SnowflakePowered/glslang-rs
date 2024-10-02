@@ -2,11 +2,11 @@ use crate::ctypes::ShaderStage;
 use crate::error::GlslangError;
 use crate::{Compiler, Shader};
 use glslang_sys as sys;
+use glslang_sys::glslang_spv_options_s;
 use rustc_hash::FxHashMap;
 use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use glslang_sys::glslang_spv_options_s;
 
 /// Lower-level program interface.
 pub struct Program<'a> {
@@ -137,7 +137,13 @@ impl<'a> Program<'a> {
         // require callbacks that either we don't expose, or are not exposed by the C API.
         // disableOptimizer is redundant as well because we need to support WASM, which doesn't support
         // the optimizer.
-        unsafe { sys::glslang_program_SPIRV_generate_with_options(self.handle.as_ptr(), stage, &mut options) }
+        unsafe {
+            sys::glslang_program_SPIRV_generate_with_options(
+                self.handle.as_ptr(),
+                stage,
+                &mut options,
+            )
+        }
 
         let size = unsafe { sys::glslang_program_SPIRV_get_size(self.handle.as_ptr()) };
         let mut buffer = vec![0u32; size];
@@ -192,23 +198,22 @@ void main() {
 }
         "#,
         ))
-            .expect("source");
+        .expect("source");
 
         let input = ShaderInput::new(
             &source,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
-            &[],
+            None,
             None,
         )
-            .expect("target");
+        .expect("target");
         let _shader = Shader::new(&compiler, input).expect("shader init");
 
         let program = Program::new(&compiler);
         // program.add_shader(&shader);
 
-       program.link().expect("shader");
-
+        program.link().expect("shader");
     }
 
     #[test]
@@ -233,7 +238,7 @@ void main() {
             &source,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -250,16 +255,13 @@ void main() {
     pub fn test_compile_thread() {
         let mut handles = Vec::new();
         for _ in 0..8 {
-            handles.push(std::thread::spawn(|| {
-                test_compile()
-            }));
+            handles.push(std::thread::spawn(|| test_compile()));
         }
 
         for handle in handles {
             handle.join().unwrap()
         }
     }
-
 
     #[test]
     pub fn test_verify_old_gl() {
@@ -289,7 +291,7 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: Some((120, GlslProfile::None)),
             },
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -324,7 +326,7 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: None,
             },
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -376,7 +378,7 @@ void main()
             &fragment,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -388,7 +390,7 @@ void main()
             &vertex,
             ShaderStage::Vertex,
             &CompilerOptions::default(),
-            &[],
+            None,
             None,
         )
         .expect("target");
@@ -435,22 +437,28 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: None,
             },
-            &[("CUSTOM_MACRO", Some("1.0"))],
+            Some(&[("CUSTOM_MACRO", Some("1.0"))]),
             None,
         )
         .expect("target");
         let _shader = Shader::new(&compiler, input).expect("shader init");
     }
-    
+
     #[test]
     pub fn test_include_handler() {
         let compiler = Compiler::acquire().unwrap();
 
         struct MyIncludeHandler {
-            header_included: Vec<String>
+            header_included: Vec<String>,
         }
         impl IncludeHandler for MyIncludeHandler {
-            fn include(&mut self, _ty: crate::include::IncludeType, header_name: &str, _includer_name : &str, _include_depth : usize) -> Option<IncludeResult> {
+            fn include(
+                &mut self,
+                _ty: crate::include::IncludeType,
+                header_name: &str,
+                _includer_name: &str,
+                _include_depth: usize,
+            ) -> Option<IncludeResult> {
                 self.header_included.push(header_name.into());
                 Some(IncludeResult {
                     name: "included_macro".into(),
@@ -488,12 +496,15 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: None,
             },
-            &[("CUSTOM_MACRO", Some("1.0"))],
+            Some(&[("CUSTOM_MACRO", Some("1.0"))]),
             Some(&mut include_handler),
         )
         .expect("target");
         let _shader = Shader::new(&compiler, input).expect("shader init");
         assert!(include_handler.header_included.len() == 1);
-        assert_eq!(include_handler.header_included[0], "custom_include.glsl", "");
+        assert_eq!(
+            include_handler.header_included[0], "custom_include.glsl",
+            ""
+        );
     }
 }

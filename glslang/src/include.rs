@@ -107,5 +107,11 @@ pub(crate) unsafe extern "C" fn _glslang_rs_drop_result(
 /// Data can be attached to this struct for solving path
 /// If the inclusion fails, return None.
 pub trait IncludeHandler {
-    fn include(&mut self, ty: IncludeType, header_name: &str, includer_name : &str, include_depth : usize) -> Option<IncludeResult>;
+    fn include(
+        &mut self,
+        ty: IncludeType,
+        header_name: &str,
+        includer_name: &str,
+        include_depth: usize,
+    ) -> Option<IncludeResult>;
 }

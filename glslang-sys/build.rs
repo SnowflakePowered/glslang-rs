@@ -1,5 +1,5 @@
-use std::env;
 use glob::glob;
+use std::env;
 
 pub fn add_subdirectory(build: &mut cc::Build, directory: &str) {
     for entry in
