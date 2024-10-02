@@ -26,10 +26,6 @@ unsafe fn _glslang_rs_call_func(
     include_depth: usize,
 ) -> *mut sys::glsl_include_result_t {
     let Ok(s) = std::panic::catch_unwind(|| unsafe {
-        let Some(callback) = ctx.cast_const().cast::<IncludeCallback>().as_ref() else {
-            return core::ptr::null_mut();
-        };
-
         let header_name = CStr::from_ptr(header_name);
         let includer_name = CStr::from_ptr(includer_name);
 
@@ -38,9 +34,13 @@ unsafe fn _glslang_rs_call_func(
             return core::ptr::null_mut();
         };
 
-        let Some(result) = callback(ty, header_name, includer_name, include_depth) else {
+        let callback = Box::from_raw(ctx as *mut &mut dyn IncludeHandler);
+        let include_result = callback.include(ty, header_name, includer_name, include_depth);
+        Box::leak(callback); // Leak callback as we dont have ownership.
+        if include_result.is_none() {
             return core::ptr::null_mut();
         };
+        let result = include_result.unwrap();
 
         let header_data_len = result.data.len();
 
@@ -104,9 +104,9 @@ pub(crate) unsafe extern "C" fn _glslang_rs_drop_result(
     return 0;
 }
 
-///  A callback to handle include files.
-///
-/// `fn (IncludeType, header_name, includer_name, include_depth)`
-///
+/// A structure to resolve include path ourselves.
+/// Data can be attached to this struct for solving path
 /// If the inclusion fails, return None.
-pub type IncludeCallback = fn(IncludeType, &str, &str, usize) -> Option<IncludeResult>;
+pub trait IncludeHandler {
+    fn include(&mut self, ty: IncludeType, header_name: &str, includer_name : &str, include_depth : usize) -> Option<IncludeResult>;
+}

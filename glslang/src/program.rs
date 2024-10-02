@@ -171,6 +171,7 @@ impl<'a> Drop for Program<'a> {
 mod tests {
     use super::*;
     use crate::ctypes::ShaderStage;
+    use crate::include::{IncludeHandler, IncludeResult};
     use crate::shader::{CompilerOptions, OpenGlVersion, ShaderInput, ShaderSource, Target};
     use crate::{GlslProfile, ShaderMessage, SourceLanguage};
     use rspirv::binary::Disassemble;
@@ -197,6 +198,7 @@ void main() {
             &source,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
+            &[],
             None,
         )
             .expect("target");
@@ -231,6 +233,7 @@ void main() {
             &source,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
+            &[],
             None,
         )
         .expect("target");
@@ -286,6 +289,7 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: Some((120, GlslProfile::None)),
             },
+            &[],
             None,
         )
         .expect("target");
@@ -320,6 +324,7 @@ void main() {
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
                 version_profile: None,
             },
+            &[],
             None,
         )
         .expect("target");
@@ -371,6 +376,7 @@ void main()
             &fragment,
             ShaderStage::Fragment,
             &CompilerOptions::default(),
+            &[],
             None,
         )
         .expect("target");
@@ -382,6 +388,7 @@ void main()
             &vertex,
             ShaderStage::Vertex,
             &CompilerOptions::default(),
+            &[],
             None,
         )
         .expect("target");
@@ -400,5 +407,93 @@ void main()
         let module = loader.module();
 
         println!("{}", module.disassemble())
+    }
+
+    #[test]
+    pub fn test_add_macros() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::try_from(String::from(
+            r#"
+#version 460
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(CUSTOM_MACRO);
+}
+        "#,
+        ))
+        .expect("source");
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::None(None),
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            &[("CUSTOM_MACRO", Some("1.0"))],
+            None,
+        )
+        .expect("target");
+        let _shader = Shader::new(&compiler, input).expect("shader init");
+    }
+    
+    #[test]
+    pub fn test_include_handler() {
+        let compiler = Compiler::acquire().unwrap();
+
+        struct MyIncludeHandler {
+            header_included: Vec<String>
+        }
+        impl IncludeHandler for MyIncludeHandler {
+            fn include(&mut self, _ty: crate::include::IncludeType, header_name: &str, _includer_name : &str, _include_depth : usize) -> Option<IncludeResult> {
+                self.header_included.push(header_name.into());
+                Some(IncludeResult {
+                    name: "included_macro".into(),
+                    data: "#define INCLUDED_MACRO 0.0".into(),
+                })
+            }
+        }
+
+        let source = ShaderSource::try_from(String::from(
+            r#"
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "custom_include.glsl"
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(INCLUDED_MACRO);
+}
+        "#,
+        ))
+        .expect("source");
+        let mut include_handler = MyIncludeHandler {
+            header_included: vec![],
+        };
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            &[("CUSTOM_MACRO", Some("1.0"))],
+            Some(&mut include_handler),
+        )
+        .expect("target");
+        let _shader = Shader::new(&compiler, input).expect("shader init");
+        assert!(include_handler.header_included.len() == 1);
+        assert_eq!(include_handler.header_included[0], "custom_include.glsl", "");
     }
 }
