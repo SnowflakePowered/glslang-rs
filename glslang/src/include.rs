@@ -37,10 +37,9 @@ unsafe fn _glslang_rs_call_func(
         let callback = Box::from_raw(ctx as *mut &mut dyn IncludeHandler);
         let include_result = callback.include(ty, header_name, includer_name, include_depth);
         Box::leak(callback); // Leak callback as we dont have ownership.
-        if include_result.is_none() {
+        let Some(result) = include_result else {
             return core::ptr::null_mut();
         };
-        let result = include_result.unwrap();
 
         let header_data_len = result.data.len();
 
@@ -101,7 +100,7 @@ pub(crate) unsafe extern "C" fn _glslang_rs_drop_result(
     drop(header_data);
     drop(header_name);
     drop(boxed);
-    return 0;
+    0
 }
 
 /// A structure to resolve include path ourselves.
