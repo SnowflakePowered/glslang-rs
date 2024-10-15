@@ -372,7 +372,6 @@ void main()
 }
 "#,
         );
-        let mut program = Program::new(&compiler);
 
         let fragment = ShaderInput::new(
             &fragment,
@@ -384,8 +383,6 @@ void main()
         .expect("target");
         let fragment = Shader::new(&compiler, fragment).expect("shader init");
 
-        program.add_shader(&fragment);
-
         let vertex = ShaderInput::new(
             &vertex,
             ShaderStage::Vertex,
@@ -396,6 +393,9 @@ void main()
         .expect("target");
         let vertex = Shader::new(&compiler, vertex).expect("shader init");
 
+        let mut program = Program::new(&compiler);
+
+        program.add_shader(&fragment);
         program.add_shader(&vertex);
 
         let _code = program.compile(ShaderStage::Fragment).expect("shader");
@@ -408,7 +408,7 @@ void main()
         rspirv::binary::parse_words(&code2, &mut loader).unwrap();
         let module = loader.module();
 
-        println!("{}", module.disassemble())
+        println!("{}", module.disassemble());
     }
 
     #[test]
