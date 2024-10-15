@@ -32,7 +32,7 @@ impl<'a> Program<'a> {
     /// Add a shader to the program. The lifetime of the shader must extend beyond the lifetime of the program instance.
     pub fn add_shader<'shader>(&mut self, shader: &'shader Shader<'shader>)
     where
-        'a: 'shader,
+        'shader: 'a,
     {
         unsafe { sys::glslang_program_add_shader(self.handle.as_ptr(), shader.handle.as_ptr()) }
         self.cache.insert(shader.stage, shader.is_spirv);
