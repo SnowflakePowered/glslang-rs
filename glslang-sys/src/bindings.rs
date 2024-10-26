@@ -192,6 +192,9 @@ impl glslang_messages_t {
 impl glslang_messages_t {
     pub const DISPLAY_ERROR_COLUMN: glslang_messages_t = glslang_messages_t(131072);
 }
+impl glslang_messages_t {
+    pub const LINK_TIME_OPTIMIZATION: glslang_messages_t = glslang_messages_t(262144);
+}
 impl ::std::ops::BitOr<glslang_messages_t> for glslang_messages_t {
     type Output = Self;
     #[inline]
