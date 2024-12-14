@@ -116,6 +116,7 @@ pub enum glslang_target_client_version_t {
     Vulkan1_1 = 4198400,
     Vulkan1_2 = 4202496,
     Vulkan1_3 = 4206592,
+    Vulkan1_4 = 4210688,
     OpenGL450 = 450,
 }
 #[repr(i32)]
