@@ -15,7 +15,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glslang-sys = { version = "0.6", path = "../glslang-sys" }
+glslang-sys = { version = "0.7", path = "../glslang-sys" }
 thiserror = "1.0"
 rustc-hash = "2.0.0"
 bitflags = "2.4.2"
