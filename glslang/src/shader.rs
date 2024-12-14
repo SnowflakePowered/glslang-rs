@@ -275,6 +275,8 @@ pub enum VulkanVersion {
     Vulkan1_2,
     /// Vulkan 1.3
     Vulkan1_3,
+    /// Vulkan 1.4
+    Vulkan1_4,
 }
 
 /// OpenGL Version
@@ -344,6 +346,7 @@ impl Target {
                 VulkanVersion::Vulkan1_1 => sys::glslang_target_client_version_t::Vulkan1_1,
                 VulkanVersion::Vulkan1_2 => sys::glslang_target_client_version_t::Vulkan1_2,
                 VulkanVersion::Vulkan1_3 => sys::glslang_target_client_version_t::Vulkan1_3,
+                VulkanVersion::Vulkan1_4 => sys::glslang_target_client_version_t::Vulkan1_4
             },
             Target::OpenGL { version, .. } => match version {
                 OpenGlVersion::OpenGL4_5 => sys::glslang_target_client_version_t::OpenGL450,
