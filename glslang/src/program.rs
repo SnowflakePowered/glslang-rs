@@ -1,5 +1,5 @@
 use crate::ctypes::ShaderStage;
-use crate::error::GlslangError;
+use crate::error::{GlslangError, GlslangErrorLog};
 use crate::{Compiler, Shader};
 use glslang_sys as sys;
 use glslang_sys::glslang_spv_options_s;
@@ -42,7 +42,7 @@ impl<'a> Program<'a> {
     /// on shaders.
     pub fn map_io(&mut self) -> Result<(), GlslangError> {
         if unsafe { sys::glslang_program_map_io(self.handle.as_ptr()) } == 0 {
-            return Err(GlslangError::MapIoError(self.get_log()));
+            return Err(GlslangError::MapIoError(GlslangErrorLog::new(self.get_log(), self.get_debug_log())));
         }
 
         Ok(())
@@ -57,7 +57,7 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
         if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
-            return Err(GlslangError::LinkError(self.get_log()));
+            return Err(GlslangError::LinkError(GlslangErrorLog::new(self.get_log(), self.get_debug_log())));
         }
         Ok(())
     }
@@ -80,7 +80,7 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
         if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
-            return Err(GlslangError::LinkError(self.get_log()));
+            return Err(GlslangError::LinkError(GlslangErrorLog::new(self.get_log(), self.get_debug_log())));
         }
 
         // We don't support SPIRV compile options because nearly all of them (except for generateDebugInfo),
@@ -117,7 +117,7 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
         if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
-            return Err(GlslangError::LinkError(self.get_log()));
+            return Err(GlslangError::LinkError(GlslangErrorLog::new(self.get_log(), self.get_debug_log())));
         }
 
         let mut options = glslang_spv_options_s {
@@ -155,9 +155,20 @@ impl<'a> Program<'a> {
         Ok(buffer)
     }
 
-    fn get_log(&self) -> String {
+    pub fn get_log(&self) -> String {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_program_get_info_log(self.handle.as_ptr())) };
+
+        let string = CString::from(c_str)
+            .into_string()
+            .expect("Expected glslang info log to be valid UTF-8");
+
+        string
+    }
+
+    pub fn get_debug_log(&self) -> String {
+        let c_str =
+            unsafe { CStr::from_ptr(sys::glslang_program_get_info_debug_log(self.handle.as_ptr())) };
 
         let string = CString::from(c_str)
             .into_string()

@@ -1,5 +1,5 @@
 use crate::ctypes::{ResourceType, ShaderOptions, ShaderStage};
-use crate::error::GlslangError;
+use crate::error::{GlslangError, GlslangErrorLog};
 use crate::error::GlslangError::ParseError;
 use crate::include::IncludeHandler;
 use crate::{include, limits, limits::ResourceLimits, Compiler};
@@ -48,13 +48,13 @@ impl<'a> Shader<'a> {
 
         unsafe {
             if sys::glslang_shader_preprocess(shader.handle.as_ptr(), &input.input) == 0 {
-                return Err(ParseError(shader.get_log()));
+                return Err(ParseError(GlslangErrorLog::new(shader.get_log(), shader.get_debug_log())));
             }
         }
 
         unsafe {
             if sys::glslang_shader_parse(shader.handle.as_ptr(), &input.input) == 0 {
-                return Err(ParseError(shader.get_log()));
+                return Err(ParseError(GlslangErrorLog::new(shader.get_log(), shader.get_debug_log())));
             }
         }
         Ok(shader)
@@ -98,9 +98,20 @@ impl<'a> Shader<'a> {
         unsafe { sys::glslang_shader_set_glsl_version(self.handle.as_ptr(), version) }
     }
 
-    fn get_log(&self) -> String {
+    pub fn get_log(&self) -> String {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_shader_get_info_log(self.handle.as_ptr())) };
+
+        let string = CString::from(c_str)
+            .into_string()
+            .expect("Expected glslang info log to be valid UTF-8");
+
+        string
+    }
+
+    pub fn get_debug_log(&self) -> String {
+        let c_str =
+            unsafe { CStr::from_ptr(sys::glslang_shader_get_info_debug_log(self.handle.as_ptr())) };
 
         let string = CString::from(c_str)
             .into_string()
