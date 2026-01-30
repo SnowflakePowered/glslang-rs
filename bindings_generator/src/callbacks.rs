@@ -1,4 +1,4 @@
-use bindgen::callbacks::{EnumVariantCustomBehavior, EnumVariantValue, ParseCallbacks};
+use bindgen::callbacks::{EnumVariantCustomBehavior, EnumVariantValue, ItemInfo, ParseCallbacks};
 
 #[derive(Debug)]
 pub struct GlslangCallbacks;
@@ -192,8 +192,8 @@ impl ParseCallbacks for GlslangCallbacks {
             _ => None,
         }
     }
-    fn item_name(&self, original_item_name: &str) -> Option<String> {
-        match original_item_name {
+    fn item_name(&self, item_info: ItemInfo) -> Option<String> {
+        match item_info.name {
             "GLSLANG_STAGE_TASK_NV" => {
                 panic!("huh")
             }

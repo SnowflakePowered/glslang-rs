@@ -62,7 +62,7 @@ impl<'a> Shader<'a> {
 
     /// Set shader options flags.
     pub fn options(&mut self, options: ShaderOptions) {
-        unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0) }
+        unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0 as i32) }
     }
 
     /// Shift the binding of the given resource type.
@@ -264,6 +264,8 @@ pub enum VulkanVersion {
     Vulkan1_2,
     /// Vulkan 1.3
     Vulkan1_3,
+    /// Vulkan 1.4
+    Vulkan1_4,
 }
 
 /// OpenGL Version
@@ -333,6 +335,7 @@ impl Target {
                 VulkanVersion::Vulkan1_1 => sys::glslang_target_client_version_t::Vulkan1_1,
                 VulkanVersion::Vulkan1_2 => sys::glslang_target_client_version_t::Vulkan1_2,
                 VulkanVersion::Vulkan1_3 => sys::glslang_target_client_version_t::Vulkan1_3,
+                VulkanVersion::Vulkan1_4 => sys::glslang_target_client_version_t::Vulkan1_4,
             },
             Target::OpenGL { version, .. } => match version {
                 OpenGlVersion::OpenGL4_5 => sys::glslang_target_client_version_t::OpenGL450,
@@ -436,7 +439,7 @@ impl Target {
 bitflags! {
     /// Shader messages from the glslang compiler
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-    pub struct ShaderMessage: i32 {
+    pub struct ShaderMessage: u32 {
         const DEFAULT = sys::glslang_messages_t::DEFAULT.0;
         const RELAXED_ERRORS = sys::glslang_messages_t::RELAXED_ERRORS.0;
         const SUPPRESS_WARNINGS = sys::glslang_messages_t::SUPPRESS_WARNINGS.0;
@@ -456,6 +459,8 @@ bitflags! {
         const ENHANCED = sys::glslang_messages_t::ENHANCED.0;
         const ABSOLUTE_PATH = sys::glslang_messages_t::ABSOLUTE_PATH.0;
         const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
+        const LINK_TIME_OPTIMIZATION = sys::glslang_messages_t::LINK_TIME_OPTIMIZATION.0;
+        const VALIDATE_CROSS_STAGE_IO = sys::glslang_messages_t::VALIDATE_CROSS_STAGE_IO.0;
     }
 }
 
