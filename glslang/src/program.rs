@@ -55,7 +55,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0 as i32) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
         Ok(())
@@ -78,7 +81,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0 as i32) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
 
@@ -115,7 +121,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0 as i32) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
 

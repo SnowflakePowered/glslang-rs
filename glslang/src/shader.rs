@@ -63,7 +63,9 @@ impl<'a> Shader<'a> {
 
     /// Set shader options flags.
     pub fn options(&mut self, options: ShaderOptions) {
-        unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0 as i32) }
+        unsafe {
+            sys::glslang_shader_set_options(self.handle.as_ptr(), options.0 as core::ffi::c_int)
+        }
     }
 
     /// Shift the binding of the given resource type.
