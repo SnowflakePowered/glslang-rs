@@ -14,6 +14,7 @@ use std::ffi::{CStr, CString, c_void};
 use std::ptr::NonNull;
 
 /// A handle to a shader in the glslang compiler.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Shader<'a> {
     pub(crate) handle: NonNull<sys::glslang_shader_t>,
     pub(crate) stage: ShaderStage,
@@ -182,7 +183,7 @@ void main() {
 }
 
 /// The source string of a shader.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ShaderSource(CString);
 
 impl From<String> for ShaderSource {
@@ -246,7 +247,7 @@ pub struct ShaderInput<'a> {
 
 /// Vulkan version
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VulkanVersion {
     /// Vulkan 1.0
@@ -263,7 +264,7 @@ pub enum VulkanVersion {
 
 /// OpenGL Version
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum OpenGlVersion {
     /// OpenGL 4.5
@@ -273,7 +274,7 @@ pub enum OpenGlVersion {
 /// The target environment to compile or validate the input shader to.
 ///
 /// If no SPIR-V version is specified, the shader will be unable to be compiled.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Target {
     /// No specified environment.
     ///
@@ -385,7 +386,7 @@ impl Target {
             Target::None(spirv_version) => {
                 if spirv_version.is_some() && profile == GlslProfile::Compatibility {
                     return Err(GlslangError::InvalidProfile(
-                        self.clone(),
+                        *self,
                         version,
                         GlslProfile::Compatibility,
                     ));
@@ -394,13 +395,13 @@ impl Target {
             Target::Vulkan { .. } => {
                 if version < 140 {
                     // Desktop shaders for Vulkan SPIR-V require version 140
-                    return Err(GlslangError::InvalidProfile(self.clone(), version, profile));
+                    return Err(GlslangError::InvalidProfile(*self, version, profile));
                 }
 
                 // compilation for SPIR-V does not support the compatibility profile
                 if profile == GlslProfile::Compatibility {
                     return Err(GlslangError::InvalidProfile(
-                        self.clone(),
+                        *self,
                         version,
                         GlslProfile::Compatibility,
                     ));
@@ -410,13 +411,13 @@ impl Target {
                 if spirv_version.is_some() {
                     // OpenGL SPIRV needs 330+
                     if version < 330 {
-                        return Err(GlslangError::InvalidProfile(self.clone(), version, profile));
+                        return Err(GlslangError::InvalidProfile(*self, version, profile));
                     }
 
                     // compilation for SPIR-V does not support the compatibility profile
                     if profile == GlslProfile::Compatibility {
                         return Err(GlslangError::InvalidProfile(
-                            self.clone(),
+                            *self,
                             version,
                             GlslProfile::Compatibility,
                         ));
@@ -464,7 +465,7 @@ impl From<ShaderMessage> for sys::glslang_messages_t {
 }
 
 /// Options to configure the compilation of a shader.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct CompilerOptions {
     /// The source language of the shader.
     pub source_language: SourceLanguage,

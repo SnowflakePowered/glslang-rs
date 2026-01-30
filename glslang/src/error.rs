@@ -1,10 +1,10 @@
+use crate::GlslProfile;
 use crate::ctypes::ShaderStage;
 use crate::shader::Target;
-use crate::GlslProfile;
 use thiserror::Error;
 
 /// The error type for `glslang`.
-#[derive(Debug, Error)]
+#[derive(Error, Debug, Clone, Hash, PartialEq, Eq)]
 pub enum GlslangError {
     /// Error occurred when preprocessing.
     #[error("preprocess error: {0}")]

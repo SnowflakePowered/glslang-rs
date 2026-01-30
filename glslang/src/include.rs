@@ -11,6 +11,7 @@ pub enum IncludeType {
 }
 
 /// The result of a resolved include.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct IncludeResult {
     /// The name of the header.
     pub name: String,

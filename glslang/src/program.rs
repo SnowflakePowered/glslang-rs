@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 /// Lower-level program interface.
+#[derive(Debug, Clone)]
 pub struct Program<'a> {
     handle: NonNull<sys::glslang_program_t>,
     cache: FxHashMap<ShaderStage, bool>,

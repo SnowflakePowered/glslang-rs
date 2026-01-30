@@ -8,7 +8,7 @@ pub const DEFAULT_LIMITS: ResourceLimits = ResourceLimits::default_limits();
 
 /// Specifies resource limits allowed by each shader.
 #[repr(transparent)]
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct ResourceLimits(pub(crate) sys::glslang_resource_t);
 
 impl ResourceLimits {

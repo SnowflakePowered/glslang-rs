@@ -15,6 +15,7 @@ mod shader;
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 
 /// A handle representing the glslang compiler instance.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Compiler;
 
 pub use crate::ctypes::*;
