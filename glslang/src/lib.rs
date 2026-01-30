@@ -15,6 +15,7 @@ mod shader;
 static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 
 /// A handle representing the glslang compiler instance.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Compiler;
 
 pub use crate::ctypes::*;
@@ -38,13 +39,13 @@ impl Compiler {
     }
 
     /// Create a [`Shader`](crate::Shader) with the given inputs.
-    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader, error::GlslangError> {
-        Shader::new(&self, input)
+    pub fn create_shader(&'_ self, input: ShaderInput) -> Result<Shader<'_>, error::GlslangError> {
+        Shader::new(self, input)
     }
 
     /// Create a [`Program`](crate::Program) instance.
-    pub fn create_program(&self) -> Program {
-        Program::new(&self)
+    pub fn create_program(&'_ self) -> Program<'_> {
+        Program::new(self)
     }
 }
 

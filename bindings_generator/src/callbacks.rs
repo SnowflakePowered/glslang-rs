@@ -1,4 +1,4 @@
-use bindgen::callbacks::{EnumVariantCustomBehavior, EnumVariantValue, ParseCallbacks};
+use bindgen::callbacks::{EnumVariantCustomBehavior, EnumVariantValue, ItemInfo, ParseCallbacks};
 
 #[derive(Debug)]
 pub struct GlslangCallbacks;
@@ -118,40 +118,32 @@ impl ParseCallbacks for GlslangCallbacks {
         _variant_value: EnumVariantValue,
     ) -> Option<String> {
         match enum_name {
-            Some("glslang_stage_t") => GlslangCallbacks::rename_shader_stage(original_variant_name),
-            Some("glslang_stage_mask_t") => {
-                GlslangCallbacks::rename_shader_stage_mask(original_variant_name)
-            }
-            Some("glslang_resource_type_t") => {
-                GlslangCallbacks::rename_resource_type(original_variant_name)
-            }
-            Some("glslang_source_t") => GlslangCallbacks::rename_source_type(original_variant_name),
-            Some("glslang_client_t") => GlslangCallbacks::rename_client_type(original_variant_name),
+            Some("glslang_stage_t") => Self::rename_shader_stage(original_variant_name),
+            Some("glslang_stage_mask_t") => Self::rename_shader_stage_mask(original_variant_name),
+            Some("glslang_resource_type_t") => Self::rename_resource_type(original_variant_name),
+            Some("glslang_source_t") => Self::rename_source_type(original_variant_name),
+            Some("glslang_client_t") => Self::rename_client_type(original_variant_name),
             Some("glslang_target_language_t") => {
-                GlslangCallbacks::rename_target_language(original_variant_name)
+                Self::rename_target_language(original_variant_name)
             }
             Some("glslang_target_client_version_t") => {
-                GlslangCallbacks::rename_target_client_version(original_variant_name)
+                Self::rename_target_client_version(original_variant_name)
             }
             Some("glslang_target_language_version_t") => {
-                GlslangCallbacks::rename_target_language_version(original_variant_name)
+                Self::rename_target_language_version(original_variant_name)
             }
             Some("glslang_texture_sampler_transform_mode_t") => {
-                GlslangCallbacks::rename_texture_sampler_transform_mode(original_variant_name)
+                Self::rename_texture_sampler_transform_mode(original_variant_name)
             }
-            Some("glslang_messages_t") => GlslangCallbacks::rename_messages(original_variant_name),
-            Some("glslang_reflection_options_t") => {
-                GlslangCallbacks::rename_messages(original_variant_name)
-            }
-            Some("glslang_shader_options_t") => {
-                GlslangCallbacks::rename_shader_options(original_variant_name)
-            }
-            Some("glslang_profile_t") => GlslangCallbacks::rename_profile(original_variant_name),
+            Some("glslang_messages_t") => Self::rename_messages(original_variant_name),
+            Some("glslang_reflection_options_t") => Self::rename_messages(original_variant_name),
+            Some("glslang_shader_options_t") => Self::rename_shader_options(original_variant_name),
+            Some("glslang_profile_t") => Self::rename_profile(original_variant_name),
             // Some("enum dxil_validator_version") => {
-            //     GlslangCallbacks::rename_validator_version(original_variant_name, variant_value)
+            //     Self::rename_validator_version(original_variant_name, variant_value)
             // }
             // Some("enum dxil_spirv_yz_flip_mode") => {
-            //     GlslangCallbacks::rename_flip_mode(original_variant_name)
+            //     Self::rename_flip_mode(original_variant_name)
             // }
             _ => {
                 eprintln!("skipping {:?}", enum_name);
@@ -192,8 +184,8 @@ impl ParseCallbacks for GlslangCallbacks {
             _ => None,
         }
     }
-    fn item_name(&self, original_item_name: &str) -> Option<String> {
-        match original_item_name {
+    fn item_name(&self, item_info: ItemInfo) -> Option<String> {
+        match item_info.name {
             "GLSLANG_STAGE_TASK_NV" => {
                 panic!("huh")
             }

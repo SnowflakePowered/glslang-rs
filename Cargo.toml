@@ -5,3 +5,7 @@ members = [ "bindings_generator",
     "glslang-sys",
 ]
 resolver = "2"
+
+[workspace.lints.clippy]
+missing_const_for_fn = "warn"
+use_self = "warn"

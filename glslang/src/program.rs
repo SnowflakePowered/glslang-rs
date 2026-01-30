@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 /// Lower-level program interface.
+#[derive(Debug, Clone)]
 pub struct Program<'a> {
     handle: NonNull<sys::glslang_program_t>,
     cache: FxHashMap<ShaderStage, bool>,
@@ -18,15 +19,13 @@ pub struct Program<'a> {
 impl<'a> Program<'a> {
     /// Create a new program instance.
     pub fn new(_compiler: &'a Compiler) -> Self {
-        let program = Self {
+        Self {
             handle: unsafe {
                 NonNull::new(sys::glslang_program_create()).expect("glslang created null shader")
             },
             cache: FxHashMap::default(),
             _compiler: PhantomData,
-        };
-
-        program
+        }
     }
 
     /// Add a shader to the program. The lifetime of the shader must extend beyond the lifetime of the program instance.
@@ -56,7 +55,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
         Ok(())
@@ -79,7 +81,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
 
@@ -116,7 +121,10 @@ impl<'a> Program<'a> {
             | glslang_sys::glslang_messages_t::VULKAN_RULES
             | glslang_sys::glslang_messages_t::SPV_RULES;
 
-        if unsafe { sys::glslang_program_link(self.handle.as_ptr(), messages.0) } == 0 {
+        if unsafe {
+            sys::glslang_program_link(self.handle.as_ptr(), messages.0 as core::ffi::c_int)
+        } == 0
+        {
             return Err(GlslangError::LinkError(self.get_log()));
         }
 
@@ -159,11 +167,9 @@ impl<'a> Program<'a> {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_program_get_info_log(self.handle.as_ptr())) };
 
-        let string = CString::from(c_str)
+        CString::from(c_str)
             .into_string()
-            .expect("Expected glslang info log to be valid UTF-8");
-
-        string
+            .expect("Expected glslang info log to be valid UTF-8")
     }
 }
 
@@ -186,7 +192,7 @@ mod tests {
     pub fn test_link() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 450
 
@@ -197,8 +203,7 @@ void main() {
     color = texture(tex, vec2(0.0));
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -208,9 +213,9 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(compiler, input).expect("shader init");
 
-        let program = Program::new(&compiler);
+        let program = Program::new(compiler);
         // program.add_shader(&shader);
 
         program.link().expect("shader");
@@ -220,7 +225,7 @@ void main() {
     pub fn test_compile() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 450
 
@@ -231,8 +236,7 @@ void main() {
     color = texture(tex, vec2(0.0));
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -242,7 +246,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(compiler, input).expect("shader init");
         let code = shader.compile().expect("compile");
         let mut loader = rspirv::dr::Loader::new();
         rspirv::binary::parse_words(&code, &mut loader).unwrap();
@@ -255,7 +259,7 @@ void main() {
     pub fn test_compile_thread() {
         let mut handles = Vec::new();
         for _ in 0..8 {
-            handles.push(std::thread::spawn(|| test_compile()));
+            handles.push(std::thread::spawn(test_compile));
         }
 
         for handle in handles {
@@ -295,14 +299,14 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(compiler, input).expect("shader init");
     }
 
     #[test]
     pub fn test_no_language_target_does_not_segfault() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 460
 
@@ -314,8 +318,7 @@ void main() {
     color = texture(tex, vec2(0.0));
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -330,7 +333,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(compiler, input).expect("shader init");
         assert!(matches!(
             shader.compile(),
             Err(GlslangError::NoLanguageTarget)
@@ -381,7 +384,7 @@ void main()
             None,
         )
         .expect("target");
-        let fragment = Shader::new(&compiler, fragment).expect("shader init");
+        let fragment = Shader::new(compiler, fragment).expect("shader init");
 
         let vertex = ShaderInput::new(
             &vertex,
@@ -391,9 +394,9 @@ void main()
             None,
         )
         .expect("target");
-        let vertex = Shader::new(&compiler, vertex).expect("shader init");
+        let vertex = Shader::new(compiler, vertex).expect("shader init");
 
-        let mut program = Program::new(&compiler);
+        let mut program = Program::new(compiler);
 
         program.add_shader(&fragment);
         program.add_shader(&vertex);
@@ -415,7 +418,7 @@ void main()
     pub fn test_add_macros() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 460
 
@@ -425,8 +428,7 @@ void main() {
     color = vec4(CUSTOM_MACRO);
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -441,7 +443,7 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(compiler, input).expect("shader init");
     }
 
     #[test]
@@ -467,7 +469,7 @@ void main() {
             }
         }
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 460
 #extension GL_GOOGLE_include_directive : require
@@ -479,8 +481,7 @@ void main() {
     color = vec4(INCLUDED_MACRO);
 }
         "#,
-        ))
-        .expect("source");
+        ));
         let mut include_handler = MyIncludeHandler {
             header_included: vec![],
         };
@@ -500,7 +501,7 @@ void main() {
             Some(&mut include_handler),
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(compiler, input).expect("shader init");
         assert!(include_handler.header_included.len() == 1);
         assert_eq!(
             include_handler.header_included[0], "custom_include.glsl",

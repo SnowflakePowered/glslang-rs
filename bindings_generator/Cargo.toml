@@ -1,10 +1,13 @@
 [package]
 name = "bindings_generator"
 version = "0.4.0"
-edition = "2021"
+edition = "2024"
 publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bindgen = "0.70.1"
-cmake = "0.1"
+bindgen = "0.72.1"
+cmake = "0.1.57"
+
+[lints]
+workspace = true

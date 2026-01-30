@@ -2,7 +2,7 @@ use crate::ctypes::{ResourceType, ShaderOptions, ShaderStage};
 use crate::error::GlslangError;
 use crate::error::GlslangError::ParseError;
 use crate::include::IncludeHandler;
-use crate::{include, limits, limits::ResourceLimits, Compiler};
+use crate::{Compiler, include, limits, limits::ResourceLimits};
 use crate::{GlslProfile, SourceLanguage, SpirvVersion};
 use bitflags::bitflags;
 use glslang_sys as sys;
@@ -10,10 +10,11 @@ use glslang_sys::glsl_include_callbacks_s;
 use rustc_hash::FxHashMap;
 use smartstring::{LazyCompact, SmartString};
 use std::borrow::Cow;
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{CStr, CString, c_void};
 use std::ptr::NonNull;
 
 /// A handle to a shader in the glslang compiler.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Shader<'a> {
     pub(crate) handle: NonNull<sys::glslang_shader_t>,
     pub(crate) stage: ShaderStage,
@@ -62,7 +63,9 @@ impl<'a> Shader<'a> {
 
     /// Set shader options flags.
     pub fn options(&mut self, options: ShaderOptions) {
-        unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0) }
+        unsafe {
+            sys::glslang_shader_set_options(self.handle.as_ptr(), options.0 as core::ffi::c_int)
+        }
     }
 
     /// Shift the binding of the given resource type.
@@ -102,24 +105,22 @@ impl<'a> Shader<'a> {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_shader_get_info_log(self.handle.as_ptr())) };
 
-        let string = CString::from(c_str)
+        CString::from(c_str)
             .into_string()
-            .expect("Expected glslang info log to be valid UTF-8");
-
-        string
+            .expect("Expected glslang info log to be valid UTF-8")
     }
 
     /// Convenience method to compile this shader without linking to other shaders.
     pub fn compile(&self) -> Result<Vec<u32>, GlslangError> {
         let mut program = self._compiler.create_program();
-        program.add_shader(&self);
+        program.add_shader(self);
         program.compile(self.stage)
     }
 
     /// Convenience method to compile this shader without linking to other shaders, optimizing for size.
     pub fn compile_size_optimized(&self) -> Result<Vec<u32>, GlslangError> {
         let mut program = self._compiler.create_program();
-        program.add_shader(&self);
+        program.add_shader(self);
         program.compile_size_optimized(self.stage)
     }
 
@@ -132,11 +133,9 @@ impl<'a> Shader<'a> {
             ))
         };
 
-        let string = CString::from(c_str)
+        CString::from(c_str)
             .into_string()
-            .expect("Expected glslang info log to be valid UTF-8");
-
-        string
+            .expect("Expected glslang info log to be valid UTF-8")
     }
 }
 
@@ -156,7 +155,7 @@ mod tests {
     pub fn test_parse() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 450
 
@@ -167,8 +166,7 @@ void main() {
     color = texture(tex, vec2(0.0));
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -178,7 +176,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(compiler, input).expect("shader init");
 
         let code = shader.get_preprocessed_code();
 
@@ -187,7 +185,7 @@ void main() {
 }
 
 /// The source string of a shader.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ShaderSource(CString);
 
 impl From<String> for ShaderSource {
@@ -210,9 +208,7 @@ impl ShaderSource {
             return None;
         };
 
-        let Some(string) = string.trim().lines().next() else {
-            return None;
-        };
+        let string = string.trim().lines().next()?;
 
         let string = string.trim();
         if !string.starts_with("#version ") {
@@ -253,7 +249,7 @@ pub struct ShaderInput<'a> {
 
 /// Vulkan version
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VulkanVersion {
     /// Vulkan 1.0
@@ -264,11 +260,13 @@ pub enum VulkanVersion {
     Vulkan1_2,
     /// Vulkan 1.3
     Vulkan1_3,
+    /// Vulkan 1.4
+    Vulkan1_4,
 }
 
 /// OpenGL Version
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum OpenGlVersion {
     /// OpenGL 4.5
@@ -278,7 +276,7 @@ pub enum OpenGlVersion {
 /// The target environment to compile or validate the input shader to.
 ///
 /// If no SPIR-V version is specified, the shader will be unable to be compiled.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Target {
     /// No specified environment.
     ///
@@ -303,7 +301,7 @@ pub enum Target {
 }
 
 impl Target {
-    fn env(&self) -> sys::glslang_client_t {
+    const fn env(&self) -> sys::glslang_client_t {
         match self {
             Target::None(_) => sys::glslang_client_t::None,
             Target::Vulkan { .. } => sys::glslang_client_t::Vulkan,
@@ -311,7 +309,7 @@ impl Target {
         }
     }
 
-    fn target_spirv(&self) -> sys::glslang_target_language_t {
+    const fn target_spirv(&self) -> sys::glslang_target_language_t {
         match self {
             Target::None(spirv_version) | Target::OpenGL { spirv_version, .. } => {
                 if spirv_version.is_some() {
@@ -324,7 +322,7 @@ impl Target {
         }
     }
 
-    fn env_version(&self) -> sys::glslang_target_client_version_t {
+    const fn env_version(&self) -> sys::glslang_target_client_version_t {
         match self {
             // Doesn't matter.
             Target::None(_) => sys::glslang_target_client_version_t::OpenGL450,
@@ -333,6 +331,7 @@ impl Target {
                 VulkanVersion::Vulkan1_1 => sys::glslang_target_client_version_t::Vulkan1_1,
                 VulkanVersion::Vulkan1_2 => sys::glslang_target_client_version_t::Vulkan1_2,
                 VulkanVersion::Vulkan1_3 => sys::glslang_target_client_version_t::Vulkan1_3,
+                VulkanVersion::Vulkan1_4 => sys::glslang_target_client_version_t::Vulkan1_4,
             },
             Target::OpenGL { version, .. } => match version {
                 OpenGlVersion::OpenGL4_5 => sys::glslang_target_client_version_t::OpenGL450,
@@ -389,7 +388,7 @@ impl Target {
             Target::None(spirv_version) => {
                 if spirv_version.is_some() && profile == GlslProfile::Compatibility {
                     return Err(GlslangError::InvalidProfile(
-                        self.clone(),
+                        *self,
                         version,
                         GlslProfile::Compatibility,
                     ));
@@ -398,13 +397,13 @@ impl Target {
             Target::Vulkan { .. } => {
                 if version < 140 {
                     // Desktop shaders for Vulkan SPIR-V require version 140
-                    return Err(GlslangError::InvalidProfile(self.clone(), version, profile));
+                    return Err(GlslangError::InvalidProfile(*self, version, profile));
                 }
 
                 // compilation for SPIR-V does not support the compatibility profile
                 if profile == GlslProfile::Compatibility {
                     return Err(GlslangError::InvalidProfile(
-                        self.clone(),
+                        *self,
                         version,
                         GlslProfile::Compatibility,
                     ));
@@ -414,13 +413,13 @@ impl Target {
                 if spirv_version.is_some() {
                     // OpenGL SPIRV needs 330+
                     if version < 330 {
-                        return Err(GlslangError::InvalidProfile(self.clone(), version, profile));
+                        return Err(GlslangError::InvalidProfile(*self, version, profile));
                     }
 
                     // compilation for SPIR-V does not support the compatibility profile
                     if profile == GlslProfile::Compatibility {
                         return Err(GlslangError::InvalidProfile(
-                            self.clone(),
+                            *self,
                             version,
                             GlslProfile::Compatibility,
                         ));
@@ -436,7 +435,7 @@ impl Target {
 bitflags! {
     /// Shader messages from the glslang compiler
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-    pub struct ShaderMessage: i32 {
+    pub struct ShaderMessage: u32 {
         const DEFAULT = sys::glslang_messages_t::DEFAULT.0;
         const RELAXED_ERRORS = sys::glslang_messages_t::RELAXED_ERRORS.0;
         const SUPPRESS_WARNINGS = sys::glslang_messages_t::SUPPRESS_WARNINGS.0;
@@ -456,6 +455,8 @@ bitflags! {
         const ENHANCED = sys::glslang_messages_t::ENHANCED.0;
         const ABSOLUTE_PATH = sys::glslang_messages_t::ABSOLUTE_PATH.0;
         const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
+        const LINK_TIME_OPTIMIZATION = sys::glslang_messages_t::LINK_TIME_OPTIMIZATION.0;
+        const VALIDATE_CROSS_STAGE_IO = sys::glslang_messages_t::VALIDATE_CROSS_STAGE_IO.0;
     }
 }
 
@@ -466,7 +467,7 @@ impl From<ShaderMessage> for sys::glslang_messages_t {
 }
 
 /// Options to configure the compilation of a shader.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct CompilerOptions {
     /// The source language of the shader.
     pub source_language: SourceLanguage,
@@ -575,7 +576,7 @@ impl<'a> ShaderInput<'a> {
     {
         let profile = options
             .version_profile
-            .map_or_else(|| source.parse_profile(), |p| Some(p));
+            .map_or_else(|| source.parse_profile(), Some);
 
         if options.source_language == SourceLanguage::GLSL {
             options.target.verify_glsl_profile(profile.as_ref())?;
@@ -590,13 +591,10 @@ impl<'a> ShaderInput<'a> {
             _resource: &resource.0,
             defines: defines.map_or(FxHashMap::default(), |defines| {
                 defines
-                    .into_iter()
+                    .iter()
                     .map(|v| {
                         let v: MacroDefine = MacroDefine::from(v);
-                        (
-                            SmartString::from(v.name),
-                            v.value.map(|s| SmartString::from(s)),
-                        )
+                        (SmartString::from(v.name), v.value.map(SmartString::from))
                     })
                     .collect()
             }),
