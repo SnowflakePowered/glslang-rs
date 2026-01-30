@@ -298,7 +298,7 @@ pub enum Target {
 }
 
 impl Target {
-    fn env(&self) -> sys::glslang_client_t {
+    const fn env(&self) -> sys::glslang_client_t {
         match self {
             Target::None(_) => sys::glslang_client_t::None,
             Target::Vulkan { .. } => sys::glslang_client_t::Vulkan,
@@ -306,7 +306,7 @@ impl Target {
         }
     }
 
-    fn target_spirv(&self) -> sys::glslang_target_language_t {
+    const fn target_spirv(&self) -> sys::glslang_target_language_t {
         match self {
             Target::None(spirv_version) | Target::OpenGL { spirv_version, .. } => {
                 if spirv_version.is_some() {
@@ -319,7 +319,7 @@ impl Target {
         }
     }
 
-    fn env_version(&self) -> sys::glslang_target_client_version_t {
+    const fn env_version(&self) -> sys::glslang_target_client_version_t {
         match self {
             // Doesn't matter.
             Target::None(_) => sys::glslang_target_client_version_t::OpenGL450,

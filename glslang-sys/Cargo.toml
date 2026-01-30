@@ -19,3 +19,6 @@ license = "MIT OR Apache-2.0"
 [build-dependencies]
 glob = "0.3.3"
 cc = {  version = "1.2.55", features = ["parallel"] }
+
+[lints.clippy]
+missing_const_for_fn = "warn"

@@ -23,3 +23,6 @@ smartstring = "1.0.1"
 
 [dev-dependencies]
 rspirv = "0.12.0"
+
+[lints.clippy]
+missing_const_for_fn = "warn"
