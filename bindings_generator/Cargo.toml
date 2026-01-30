@@ -9,5 +9,5 @@ publish = false
 bindgen = "0.72.1"
 cmake = "0.1.57"
 
-[lints.clippy]
-missing_const_for_fn = "warn"
+[lints]
+workspace = true
