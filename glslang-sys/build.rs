@@ -2,19 +2,18 @@ use glob::glob;
 use std::env;
 
 pub fn add_subdirectory(build: &mut cc::Build, directory: &str) {
-    for entry in
-        glob(&*format!("native/glslang/{directory}/**/*.cpp")).expect("failed to read glob")
+    for path in glob(&format!("native/glslang/{directory}/**/*.cpp"))
+        .expect("failed to read glob")
+        .flatten()
     {
-        if let Ok(path) = entry {
-            build.file(path);
-        }
+        build.file(path);
     }
 
-    for entry in glob(&*format!("native/glslang/{directory}/**/*.c")).expect("failed to read glob")
+    for path in glob(&format!("native/glslang/{directory}/**/*.c"))
+        .expect("failed to read glob")
+        .flatten()
     {
-        if let Ok(path) = entry {
-            build.file(path);
-        }
+        build.file(path);
     }
 }
 

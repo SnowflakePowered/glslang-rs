@@ -2,7 +2,7 @@ use crate::ctypes::{ResourceType, ShaderOptions, ShaderStage};
 use crate::error::GlslangError;
 use crate::error::GlslangError::ParseError;
 use crate::include::IncludeHandler;
-use crate::{include, limits, limits::ResourceLimits, Compiler};
+use crate::{Compiler, include, limits, limits::ResourceLimits};
 use crate::{GlslProfile, SourceLanguage, SpirvVersion};
 use bitflags::bitflags;
 use glslang_sys as sys;
@@ -10,7 +10,7 @@ use glslang_sys::glsl_include_callbacks_s;
 use rustc_hash::FxHashMap;
 use smartstring::{LazyCompact, SmartString};
 use std::borrow::Cow;
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{CStr, CString, c_void};
 use std::ptr::NonNull;
 
 /// A handle to a shader in the glslang compiler.
@@ -102,24 +102,22 @@ impl<'a> Shader<'a> {
         let c_str =
             unsafe { CStr::from_ptr(sys::glslang_shader_get_info_log(self.handle.as_ptr())) };
 
-        let string = CString::from(c_str)
+        CString::from(c_str)
             .into_string()
-            .expect("Expected glslang info log to be valid UTF-8");
-
-        string
+            .expect("Expected glslang info log to be valid UTF-8")
     }
 
     /// Convenience method to compile this shader without linking to other shaders.
     pub fn compile(&self) -> Result<Vec<u32>, GlslangError> {
         let mut program = self._compiler.create_program();
-        program.add_shader(&self);
+        program.add_shader(self);
         program.compile(self.stage)
     }
 
     /// Convenience method to compile this shader without linking to other shaders, optimizing for size.
     pub fn compile_size_optimized(&self) -> Result<Vec<u32>, GlslangError> {
         let mut program = self._compiler.create_program();
-        program.add_shader(&self);
+        program.add_shader(self);
         program.compile_size_optimized(self.stage)
     }
 
@@ -132,11 +130,9 @@ impl<'a> Shader<'a> {
             ))
         };
 
-        let string = CString::from(c_str)
+        CString::from(c_str)
             .into_string()
-            .expect("Expected glslang info log to be valid UTF-8");
-
-        string
+            .expect("Expected glslang info log to be valid UTF-8")
     }
 }
 
@@ -156,7 +152,7 @@ mod tests {
     pub fn test_parse() {
         let compiler = Compiler::acquire().unwrap();
 
-        let source = ShaderSource::try_from(String::from(
+        let source = ShaderSource::from(String::from(
             r#"
 #version 450
 
@@ -167,8 +163,7 @@ void main() {
     color = texture(tex, vec2(0.0));
 }
         "#,
-        ))
-        .expect("source");
+        ));
 
         let input = ShaderInput::new(
             &source,
@@ -178,7 +173,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(compiler, input).expect("shader init");
 
         let code = shader.get_preprocessed_code();
 
@@ -210,9 +205,7 @@ impl ShaderSource {
             return None;
         };
 
-        let Some(string) = string.trim().lines().next() else {
-            return None;
-        };
+        let string = string.trim().lines().next()?;
 
         let string = string.trim();
         if !string.starts_with("#version ") {
@@ -580,7 +573,7 @@ impl<'a> ShaderInput<'a> {
     {
         let profile = options
             .version_profile
-            .map_or_else(|| source.parse_profile(), |p| Some(p));
+            .map_or_else(|| source.parse_profile(), Some);
 
         if options.source_language == SourceLanguage::GLSL {
             options.target.verify_glsl_profile(profile.as_ref())?;
@@ -595,13 +588,10 @@ impl<'a> ShaderInput<'a> {
             _resource: &resource.0,
             defines: defines.map_or(FxHashMap::default(), |defines| {
                 defines
-                    .into_iter()
+                    .iter()
                     .map(|v| {
                         let v: MacroDefine = MacroDefine::from(v);
-                        (
-                            SmartString::from(v.name),
-                            v.value.map(|s| SmartString::from(s)),
-                        )
+                        (SmartString::from(v.name), v.value.map(SmartString::from))
                     })
                     .collect()
             }),
