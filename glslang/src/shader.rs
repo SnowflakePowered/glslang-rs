@@ -470,6 +470,8 @@ bitflags! {
         const ENHANCED = sys::glslang_messages_t::ENHANCED.0;
         const ABSOLUTE_PATH = sys::glslang_messages_t::ABSOLUTE_PATH.0;
         const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
+        const LINK_TIME_OPTIMIZATION = sys::glslang_messages_t::LINK_TIME_OPTIMIZATION.0;
+        const VALIDATE_CROSS_STAGE_IO = sys::glslang_messages_t::VALIDATE_CROSS_STAGE_IO.0;
     }
 }
 
