@@ -13,6 +13,9 @@ impl GlslangCallbacks {
             "GLSLANG_RESOURCE_TYPE_SSBO" => Some("SSBO".into()),
             "GLSLANG_RESOURCE_TYPE_UAV" => Some("UAV".into()),
             "GLSLANG_RESOURCE_TYPE_COUNT" => Some("Count".into()),
+            "GLSLANG_RESOURCE_TYPE_COMBINED_SAMPLER" => Some("CombinedSampler".into()),
+            "GLSLANG_RESOURCE_TYPE_AS" => Some("Acceleration".into()),
+            "GLSLANG_RESOURCE_TYPE_TENSOR" => Some("Tensor".into()),
             _ => None,
         }
     }
