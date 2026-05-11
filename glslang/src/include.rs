@@ -34,9 +34,15 @@ unsafe fn _glslang_rs_call_func(
             return core::ptr::null_mut();
         };
 
-        let callback = Box::from_raw(ctx as *mut &mut dyn IncludeHandler);
+        if ctx.is_null() {
+            return core::ptr::null_mut();
+        }
+
+        // Reborrow rather than reconstructing a Box: if `include` panics, we must
+        // not free the heap slot that holds the `&mut dyn IncludeHandler` — glslang
+        // still holds the raw pointer and will call us again on the next include.
+        let callback = &mut *(ctx as *mut &mut dyn IncludeHandler);
         let include_result = callback.include(ty, header_name, includer_name, include_depth);
-        Box::leak(callback); // Leak callback as we dont have ownership.
         let Some(result) = include_result else {
             return core::ptr::null_mut();
         };

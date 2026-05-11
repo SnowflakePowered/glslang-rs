@@ -519,4 +519,49 @@ void main() {
             ""
         );
     }
+
+    #[test]
+    pub fn test_include_without_handler_does_not_crash() {
+        // Previously, callbacks were registered with a null `ctx` when no
+        // include handler was supplied; an `#include` in the source would then
+        // dereference null in the callback. Now the callbacks should be left
+        // unset and glslang should surface a parse error instead.
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::from(
+            r#"
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "missing.glsl"
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(1.0);
+}
+        "#,
+        );
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            None::<&[(&str, Option<&str>)]>,
+            None,
+        )
+        .expect("target");
+
+        assert!(matches!(
+            Shader::new(&compiler, input),
+            Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
+        ));
+    }
 }
