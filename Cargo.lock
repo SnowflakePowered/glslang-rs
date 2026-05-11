@@ -142,7 +142,7 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.8.0+f0bd025"
+version = "0.8.1+275822a"
 dependencies = [
  "cc",
  "glob",
