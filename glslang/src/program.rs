@@ -564,4 +564,70 @@ void main() {
             Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
         ));
     }
+
+    #[test]
+    pub fn test_cloned_input_with_include_handler_compiles_twice() {
+        // A cloned `ShaderInput` shares the same callback heap allocation via
+        // `Rc`. Using both clones with `Shader::new` sequentially must not
+        // double-free, leak, or dangle the include-handler box.
+        let compiler = Compiler::acquire().unwrap();
+
+        struct CountingHandler {
+            calls: usize,
+        }
+        impl IncludeHandler for CountingHandler {
+            fn include(
+                &mut self,
+                _ty: crate::include::IncludeType,
+                _header_name: &str,
+                _includer_name: &str,
+                _include_depth: usize,
+            ) -> Option<IncludeResult> {
+                self.calls += 1;
+                Some(IncludeResult {
+                    name: "h".into(),
+                    data: "#define INCLUDED 0.0".into(),
+                })
+            }
+        }
+
+        let source = ShaderSource::from(
+            r#"
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "h.glsl"
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(INCLUDED);
+}
+        "#,
+        );
+
+        let mut handler = CountingHandler { calls: 0 };
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            None::<&[(&str, Option<&str>)]>,
+            Some(&mut handler),
+        )
+        .expect("target");
+
+        let input2 = input.clone();
+        let _shader1 = Shader::new(&compiler, input).expect("shader1");
+        let _shader2 = Shader::new(&compiler, input2).expect("shader2");
+        // One include directive per shader, exercised through the shared Rc.
+        assert_eq!(handler.calls, 2);
+    }
 }
