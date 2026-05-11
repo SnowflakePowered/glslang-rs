@@ -597,9 +597,28 @@ impl<'a> ShaderInput<'a> {
             options.target.verify_glsl_profile(profile.as_ref())?;
         }
 
-        let callbacks_ctx = include_handler.map_or(core::ptr::null_mut(), |callback| {
-            Box::into_raw(Box::new(callback))
-        });
+        // Only register include callbacks when the caller supplied a handler.
+        // Otherwise leave them null so glslang falls back to its default behavior
+        // for `#include` directives, rather than invoking our callback with a
+        // null `ctx` (which would dereference null).
+        let (callbacks_ctx, callbacks) = match include_handler {
+            Some(callback) => (
+                Box::into_raw(Box::new(callback)) as *mut c_void,
+                glsl_include_callbacks_s {
+                    include_system: Some(include::_glslang_rs_sys_func),
+                    include_local: Some(include::_glslang_rs_local_func),
+                    free_include_result: Some(include::_glslang_rs_drop_result),
+                },
+            ),
+            None => (
+                core::ptr::null_mut(),
+                glsl_include_callbacks_s {
+                    include_system: None,
+                    include_local: None,
+                    free_include_result: None,
+                },
+            ),
+        };
 
         Ok(Self {
             _source: source,
@@ -630,12 +649,8 @@ impl<'a> ShaderInput<'a> {
                 forward_compatible: 0,
                 messages: options.messages.into(),
                 resource: &resource.0,
-                callbacks: glsl_include_callbacks_s {
-                    include_system: Some(include::_glslang_rs_sys_func),
-                    include_local: Some(include::_glslang_rs_local_func),
-                    free_include_result: Some(include::_glslang_rs_drop_result),
-                },
-                callbacks_ctx: callbacks_ctx as *mut c_void,
+                callbacks,
+                callbacks_ctx,
             },
         })
     }
