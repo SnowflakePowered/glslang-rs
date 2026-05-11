@@ -12,6 +12,39 @@ use smartstring::{LazyCompact, SmartString};
 use std::borrow::Cow;
 use std::ffi::{c_void, CStr, CString};
 use std::ptr::NonNull;
+use std::rc::Rc;
+
+/// Owns the heap allocation that holds the `&mut dyn IncludeHandler` fat
+/// pointer handed to glslang as `callbacks_ctx`. Wrapped in an `Rc` inside
+/// `ShaderInput` so that clones share the same allocation and the `Box` is
+/// freed exactly once when the last clone drops.
+struct IncludeHandlerOwner<'a> {
+    ptr: *mut &'a mut dyn IncludeHandler,
+}
+
+impl<'a> IncludeHandlerOwner<'a> {
+    fn new(handler: &'a mut dyn IncludeHandler) -> Self {
+        Self {
+            ptr: Box::into_raw(Box::new(handler)),
+        }
+    }
+
+    fn as_ctx(&self) -> *mut c_void {
+        self.ptr as *mut c_void
+    }
+}
+
+impl Drop for IncludeHandlerOwner<'_> {
+    fn drop(&mut self) {
+        // SAFETY: `self.ptr` was produced by `Box::into_raw` in `new`, and
+        // because each `IncludeHandlerOwner` owns a unique `Box` (it is never
+        // copied — only shared via `Rc`), this is the only place that
+        // reconstructs and drops it.
+        unsafe {
+            drop(Box::from_raw(self.ptr));
+        }
+    }
+}
 
 /// A handle to a shader in the glslang compiler.
 pub struct Shader<'a> {
@@ -260,6 +293,10 @@ pub struct ShaderInput<'a> {
     _resource: &'a sys::glslang_resource_t,
     pub(crate) defines: FxHashMap<SmartString<LazyCompact>, Option<SmartString<LazyCompact>>>,
     pub(crate) input: sys::glslang_input_t,
+    // Keeps the heap allocation behind `input.callbacks_ctx` alive for the
+    // life of this `ShaderInput` (and any clones). When the last clone drops,
+    // `IncludeHandlerOwner::drop` releases the `Box`.
+    _include_handler: Option<Rc<IncludeHandlerOwner<'a>>>,
 }
 
 /// Vulkan version
@@ -601,15 +638,19 @@ impl<'a> ShaderInput<'a> {
         // Otherwise leave them null so glslang falls back to its default behavior
         // for `#include` directives, rather than invoking our callback with a
         // null `ctx` (which would dereference null).
-        let (callbacks_ctx, callbacks) = match include_handler {
-            Some(callback) => (
-                Box::into_raw(Box::new(callback)) as *mut c_void,
-                glsl_include_callbacks_s {
-                    include_system: Some(include::_glslang_rs_sys_func),
-                    include_local: Some(include::_glslang_rs_local_func),
-                    free_include_result: Some(include::_glslang_rs_drop_result),
-                },
-            ),
+        let (callbacks_ctx, callbacks, owner) = match include_handler {
+            Some(callback) => {
+                let owner = Rc::new(IncludeHandlerOwner::new(callback));
+                (
+                    owner.as_ctx(),
+                    glsl_include_callbacks_s {
+                        include_system: Some(include::_glslang_rs_sys_func),
+                        include_local: Some(include::_glslang_rs_local_func),
+                        free_include_result: Some(include::_glslang_rs_drop_result),
+                    },
+                    Some(owner),
+                )
+            }
             None => (
                 core::ptr::null_mut(),
                 glsl_include_callbacks_s {
@@ -617,6 +658,7 @@ impl<'a> ShaderInput<'a> {
                     include_local: None,
                     free_include_result: None,
                 },
+                None,
             ),
         };
 
@@ -652,6 +694,7 @@ impl<'a> ShaderInput<'a> {
                 callbacks,
                 callbacks_ctx,
             },
+            _include_handler: owner,
         })
     }
 }
