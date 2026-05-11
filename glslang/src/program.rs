@@ -630,4 +630,67 @@ void main() {
         // One include directive per shader, exercised through the shared Rc.
         assert_eq!(handler.calls, 2);
     }
+
+    #[test]
+    pub fn test_include_handler_panic_is_caught() {
+        // A panic inside the user's `include` callback must be caught at the
+        // FFI boundary; unwinding into glslang's C++ frames would be UB.
+        let compiler = Compiler::acquire().unwrap();
+
+        struct PanickingHandler;
+        impl IncludeHandler for PanickingHandler {
+            fn include(
+                &mut self,
+                _ty: crate::include::IncludeType,
+                _header_name: &str,
+                _includer_name: &str,
+                _include_depth: usize,
+            ) -> Option<IncludeResult> {
+                panic!("intentional panic in include handler");
+            }
+        }
+
+        let source = ShaderSource::from(
+            r#"
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "x.glsl"
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(1.0);
+}
+        "#,
+        );
+
+        let mut handler = PanickingHandler;
+        let prev = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {})); // suppress the noisy panic message
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            None::<&[(&str, Option<&str>)]>,
+            Some(&mut handler),
+        )
+        .expect("target");
+
+        let result = Shader::new(&compiler, input);
+        std::panic::set_hook(prev);
+
+        assert!(matches!(
+            result,
+            Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
+        ));
+    }
 }
