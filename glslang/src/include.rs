@@ -1,5 +1,6 @@
 use glslang_sys as sys;
 use std::ffi::{CStr, CString};
+use std::panic::AssertUnwindSafe;
 
 /// The type of include.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -25,44 +26,36 @@ unsafe fn _glslang_rs_call_func(
     includer_name: *const ::core::ffi::c_char,
     include_depth: usize,
 ) -> *mut sys::glsl_include_result_t {
-    let Ok(s) = std::panic::catch_unwind(|| unsafe {
-        let header_name = CStr::from_ptr(header_name);
-        let includer_name = CStr::from_ptr(includer_name);
+    let header_name = unsafe { CStr::from_ptr(header_name) };
+    let includer_name = unsafe { CStr::from_ptr(includer_name) };
 
-        let (Ok(header_name), Ok(includer_name)) = (header_name.to_str(), includer_name.to_str())
-        else {
-            return core::ptr::null_mut();
-        };
-
-        if ctx.is_null() {
-            return core::ptr::null_mut();
-        }
-
-        // Reborrow rather than reconstructing a Box: if `include` panics, we must
-        // not free the heap slot that holds the `&mut dyn IncludeHandler` — glslang
-        // still holds the raw pointer and will call us again on the next include.
-        let callback = &mut *(ctx as *mut &mut dyn IncludeHandler);
-        let include_result = callback.include(ty, header_name, includer_name, include_depth);
-        let Some(result) = include_result else {
-            return core::ptr::null_mut();
-        };
-
-        let header_data_len = result.data.len();
-
-        // SAFETY: String has no internal nulls.
-        let header_name_leaked = CString::new(result.name).unwrap().into_raw();
-        let header_data_leaked = CString::new(result.data).unwrap().into_raw();
-
-        return Box::into_raw(Box::new(sys::glsl_include_result_t {
-            header_name: header_name_leaked,
-            header_data: header_data_leaked,
-            header_length: header_data_len,
-        }));
-    }) else {
+    let (Ok(header_name), Ok(includer_name)) = (header_name.to_str(), includer_name.to_str()) else {
         return core::ptr::null_mut();
     };
 
-    s
+    if ctx.is_null() {
+        return core::ptr::null_mut();
+    }
+
+    // Reborrow rather than reconstructing a Box: if `include` panics, we must
+    // not free the heap slot that holds the `&mut dyn IncludeHandler` — glslang
+    // still holds the raw pointer and will call us again on the next include.
+    let callback = unsafe { &mut *(ctx as *mut &mut dyn IncludeHandler) };
+    let Some(result) = callback.include(ty, header_name, includer_name, include_depth) else {
+        return core::ptr::null_mut();
+    };
+
+    let header_data_len = result.data.len();
+
+    // SAFETY: String has no internal nulls.
+    let header_name_leaked = CString::new(result.name).unwrap().into_raw();
+    let header_data_leaked = CString::new(result.data).unwrap().into_raw();
+
+    Box::into_raw(Box::new(sys::glsl_include_result_t {
+        header_name: header_name_leaked,
+        header_data: header_data_leaked,
+        header_length: header_data_len,
+    }))
 }
 
 pub(crate) unsafe extern "C" fn _glslang_rs_sys_func(
@@ -71,13 +64,16 @@ pub(crate) unsafe extern "C" fn _glslang_rs_sys_func(
     includer_name: *const ::core::ffi::c_char,
     include_depth: usize,
 ) -> *mut sys::glsl_include_result_t {
-    _glslang_rs_call_func(
-        ctx,
-        IncludeType::System,
-        header_name,
-        includer_name,
-        include_depth,
-    )
+    std::panic::catch_unwind(AssertUnwindSafe(|| unsafe {
+        _glslang_rs_call_func(
+            ctx,
+            IncludeType::System,
+            header_name,
+            includer_name,
+            include_depth,
+        )
+    }))
+    .unwrap_or(core::ptr::null_mut())
 }
 
 pub(crate) unsafe extern "C" fn _glslang_rs_local_func(
@@ -86,26 +82,31 @@ pub(crate) unsafe extern "C" fn _glslang_rs_local_func(
     includer_name: *const ::core::ffi::c_char,
     include_depth: usize,
 ) -> *mut sys::glsl_include_result_t {
-    _glslang_rs_call_func(
-        ctx,
-        IncludeType::Local,
-        header_name,
-        includer_name,
-        include_depth,
-    )
+    std::panic::catch_unwind(AssertUnwindSafe(|| unsafe {
+        _glslang_rs_call_func(
+            ctx,
+            IncludeType::Local,
+            header_name,
+            includer_name,
+            include_depth,
+        )
+    }))
+    .unwrap_or(core::ptr::null_mut())
 }
 
 pub(crate) unsafe extern "C" fn _glslang_rs_drop_result(
     _ctx: *mut ::std::os::raw::c_void,
     result: *mut sys::glsl_include_result_t,
 ) -> ::core::ffi::c_int {
-    let boxed = Box::from_raw(result);
-    let header_name = CString::from_raw(boxed.header_name.cast_mut());
-    let header_data = CString::from_raw(boxed.header_data.cast_mut());
+    let _ = std::panic::catch_unwind(AssertUnwindSafe(|| unsafe {
+        let boxed = Box::from_raw(result);
+        let header_name = CString::from_raw(boxed.header_name.cast_mut());
+        let header_data = CString::from_raw(boxed.header_data.cast_mut());
 
-    drop(header_data);
-    drop(header_name);
-    drop(boxed);
+        drop(header_data);
+        drop(header_name);
+        drop(boxed);
+    }));
     0
 }
 
