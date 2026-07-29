@@ -10,7 +10,7 @@ use glslang_sys::glsl_include_callbacks_s;
 use rustc_hash::FxHashMap;
 use smartstring::{LazyCompact, SmartString};
 use std::borrow::Cow;
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use std::ptr::NonNull;
 use std::rc::Rc;
 
@@ -47,88 +47,17 @@ impl Drop for IncludeHandlerOwner<'_> {
 }
 
 /// A handle to a shader in the glslang compiler.
-pub struct Shader<'a> {
+pub struct Shader<'shader> {
     pub(crate) handle: NonNull<sys::glslang_shader_t>,
     pub(crate) stage: ShaderStage,
     pub(crate) is_spirv: bool,
-    _compiler: &'a Compiler,
+    _compiler: &'shader Compiler,
 }
 
-impl<'a> Shader<'a> {
+impl<'shader> Shader<'shader> {
     /// Create a new shader instance with the provided [`ShaderInput`](crate::ShaderInput).
-    pub fn new(_compiler: &'a Compiler, input: ShaderInput) -> Result<Self, GlslangError> {
-        let shader = Self {
-            handle: unsafe {
-                NonNull::new(sys::glslang_shader_create(&input.input))
-                    .expect("glslang created null shader")
-            },
-            stage: input.input.stage,
-            is_spirv: input.input.target_language == sys::glslang_target_language_t::SPIRV,
-            _compiler,
-        };
-
-        let preamble = input
-            .defines
-            .iter()
-            .map(|(k, v)| format!("#define {} {}\n", k, v.clone().unwrap_or_default()))
-            .collect::<Vec<String>>()
-            .join("");
-
-        let cpreamble = CString::new(preamble).expect("Invalid preamble format");
-        unsafe {
-            sys::glslang_shader_set_preamble(shader.handle.as_ptr(), cpreamble.as_ptr());
-        }
-
-        unsafe {
-            if sys::glslang_shader_preprocess(shader.handle.as_ptr(), &input.input) == 0 {
-                return Err(ParseError(GlslangErrorLog::new(shader.get_log(), shader.get_debug_log())));
-            }
-        }
-
-        unsafe {
-            if sys::glslang_shader_parse(shader.handle.as_ptr(), &input.input) == 0 {
-                return Err(ParseError(GlslangErrorLog::new(shader.get_log(), shader.get_debug_log())));
-            }
-        }
-        Ok(shader)
-    }
-
-    /// Set shader options flags.
-    pub fn options(&mut self, options: ShaderOptions) {
-        unsafe { sys::glslang_shader_set_options(self.handle.as_ptr(), options.0) }
-    }
-
-    /// Shift the binding of the given resource type.
-    /// This doesn't actually seem to do anything and has the potential for unsoundness.
-    #[doc(hidden)]
-    #[allow(unused)]
-    fn shift_binding(&mut self, resource_type: ResourceType, base: u32) {
-        unsafe {
-            sys::glslang_shader_shift_binding(self.handle.as_ptr(), resource_type, base);
-        }
-    }
-
-    /// Shift the binding of the given resource type to the specified base and descriptor set.
-    /// This doesn't actually seem to do anything and has the potential for unsoundness.
-    #[doc(hidden)]
-    #[allow(unused)]
-    fn shift_binding_for_set(&mut self, resource_type: ResourceType, base: u32, set: u32) {
-        unsafe {
-            sys::glslang_shader_shift_binding_for_set(
-                self.handle.as_ptr(),
-                resource_type,
-                base,
-                set,
-            );
-        }
-    }
-
-    /// Set the GLSL version of the shader
-    /// This doesn't actually seem to do anything and has the potential for unsoundness.
-    #[doc(hidden)]
-    #[allow(unused)]
-    fn glsl_version(&mut self, version: i32) {
-        unsafe { sys::glslang_shader_set_glsl_version(self.handle.as_ptr(), version) }
+    pub fn new<'input>(_compiler: &'shader Compiler, input: ShaderInput<'input>) -> ShaderBuilder<'shader, 'input> {
+        ShaderBuilder::new(_compiler, input)
     }
 
     pub fn get_log(&self) -> String {
@@ -184,6 +113,134 @@ impl<'a> Shader<'a> {
     }
 }
 
+pub struct ShaderBuilder<'shader, 'input> {
+    shader: Shader<'shader>,
+    _inputs: ShaderInput<'input>,
+}
+
+impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
+    fn new(_compiler: &'shader Compiler, input: ShaderInput<'input>) -> Self {
+        let mut shader = ShaderBuilder {
+            shader: Shader {
+                handle: unsafe {
+                    NonNull::new(sys::glslang_shader_create(&input.input))
+                        .expect("glslang created null shader")
+                },
+                stage: input.input.stage,
+                is_spirv: input.input.target_language == sys::glslang_target_language_t::SPIRV,
+                _compiler,
+            },
+            _inputs: input,
+        };
+        /*let preamble = shader.compute_define_preamble();
+        if !preamble.is_empty() {
+            shader.preamble(&preamble);
+        }*/
+        shader
+    }
+    fn compute_define_preamble(&self) -> String {
+        self._inputs
+            .defines
+            .iter()
+            .map(|(k, v)| format!("#define {} {}\n", k, v.clone().unwrap_or_default()))
+            .collect::<Vec<String>>()
+            .join("")
+    }
+    pub fn parse(self) -> Result<Shader<'shader>, GlslangError> {
+        unsafe {
+            if sys::glslang_shader_preprocess(self.shader.handle.as_ptr(), &self._inputs.input) == 0 {
+                return Err(ParseError(GlslangErrorLog::new(self.shader.get_log(), self.shader.get_debug_log())));
+            }
+            if sys::glslang_shader_parse(self.shader.handle.as_ptr(), &self._inputs.input) == 0 {
+                return Err(ParseError(GlslangErrorLog::new(self.shader.get_log(), self.shader.get_debug_log())));
+            }
+        }
+        Ok(self.shader)
+    }
+
+    /// Set shader preamble.
+    pub fn preamble(&mut self, preamble: &str) {
+        let cpreamble = CString::new(preamble).expect("Invalid preamble format");
+        unsafe { sys::glslang_shader_set_preamble(self.shader.handle.as_ptr(), cpreamble.as_ptr()) }
+    }
+
+    /// Set shader options flags.
+    pub fn options(&mut self, options: ShaderOptions) {
+        unsafe { sys::glslang_shader_set_options(self.shader.handle.as_ptr(), options.0) }
+    }
+    
+    /// Set shader entry point.
+    pub fn entry_point(&mut self, entry_point: &str) {
+        let centry_point = CString::new(entry_point).expect("Invalid entry point format");
+        unsafe { sys::glslang_shader_set_entry_point(self.shader.handle.as_ptr(), centry_point.as_ptr()) }
+    }
+
+    /// Set shader invert y.
+    pub fn invert_y(&mut self, invert_y: bool) {
+        unsafe { sys::glslang_shader_set_invert_y(self.shader.handle.as_ptr(), invert_y) }
+    }
+    
+    /// Set the default uniform block name.
+    pub fn default_uniform_block_name(&mut self, name: &str) {
+        let cname = CString::new(name).expect("Invalid entry point format");
+        unsafe {
+            sys::glslang_shader_set_default_uniform_block_name(self.shader.handle.as_ptr(), cname.as_ptr());
+        }
+    }
+
+    /// Set the default uniform block set binding values.
+    pub fn default_uniform_block_set_and_binding(&mut self, set: u32, binding: u32) {
+        unsafe {
+            sys::glslang_shader_set_default_uniform_block_set_and_binding(self.shader.handle.as_ptr(), set, binding);
+        }
+    }
+    
+    /// Set the resource set binding values.
+    pub fn resource_set_binding<S: AsRef<str>>(&mut self, bindings: &[S]) {
+        let cbindings = bindings
+            .iter()
+            .map(|b| CString::new(b.as_ref()).expect("Invalid resource set binding format"))
+            .collect::<Vec<CString>>();
+
+        let ptrs = cbindings
+            .iter()
+            .map(|b| b.as_ptr())
+            .collect::<Vec<*const c_char>>();
+
+        unsafe {
+            sys::glslang_shader_set_resource_set_binding(
+                self.shader.handle.as_ptr(),
+                ptrs.as_ptr(),
+                ptrs.len() as u32,
+            );
+        }
+    }
+
+    /// Shift the binding of the given resource type.
+    pub fn shift_binding(&mut self, resource_type: ResourceType, base: u32) {
+        unsafe {
+            sys::glslang_shader_shift_binding(self.shader.handle.as_ptr(), resource_type, base);
+        }
+    }
+
+    /// Shift the binding of the given resource type to the specified base and descriptor set.
+    pub fn shift_binding_for_set(&mut self, resource_type: ResourceType, base: u32, set: u32) {
+        unsafe {
+            sys::glslang_shader_shift_binding_for_set(
+                self.shader.handle.as_ptr(),
+                resource_type,
+                base,
+                set,
+            );
+        }
+    }
+
+    /// Set the GLSL version of the shader
+    pub fn glsl_version(&mut self, version: i32) {
+        unsafe { sys::glslang_shader_set_glsl_version(self.shader.handle.as_ptr(), version) }
+    }
+}
+
 impl<'a> Drop for Shader<'a> {
     fn drop(&mut self) {
         unsafe { sys::glslang_shader_delete(self.handle.as_ptr()) }
@@ -222,7 +279,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(&compiler, input).parse().expect("");
 
         let code = shader.get_preprocessed_code();
 

@@ -220,7 +220,7 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(&compiler, input).parse().expect("shader init");
 
         let program = Program::new(&compiler);
         // program.add_shader(&shader);
@@ -254,7 +254,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(&compiler, input).parse().expect("shader init");
         let code = shader.compile().expect("compile");
         let mut loader = rspirv::dr::Loader::new();
         rspirv::binary::parse_words(&code, &mut loader).unwrap();
@@ -307,7 +307,7 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(&compiler, input).parse().expect("shader init");
     }
 
     #[test]
@@ -342,7 +342,7 @@ void main() {
             None,
         )
         .expect("target");
-        let shader = Shader::new(&compiler, input).expect("shader init");
+        let shader = Shader::new(&compiler, input).parse().expect("shader init");
         assert!(matches!(
             shader.compile(),
             Err(GlslangError::NoLanguageTarget)
@@ -393,7 +393,7 @@ void main()
             None,
         )
         .expect("target");
-        let fragment = Shader::new(&compiler, fragment).expect("shader init");
+        let fragment = Shader::new(&compiler, fragment).parse().expect("shader init");
 
         let vertex = ShaderInput::new(
             &vertex,
@@ -403,7 +403,7 @@ void main()
             None,
         )
         .expect("target");
-        let vertex = Shader::new(&compiler, vertex).expect("shader init");
+        let vertex = Shader::new(&compiler, vertex).parse().expect("shader init");
 
         let mut program = Program::new(&compiler);
 
@@ -453,7 +453,7 @@ void main() {
             None,
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(&compiler, input).parse();
     }
 
     #[test]
@@ -512,7 +512,7 @@ void main() {
             Some(&mut include_handler),
         )
         .expect("target");
-        let _shader = Shader::new(&compiler, input).expect("shader init");
+        let _shader = Shader::new(&compiler, input).parse().expect("shader init");
         assert!(include_handler.header_included.len() == 1);
         assert_eq!(
             include_handler.header_included[0], "custom_include.glsl",
@@ -560,7 +560,7 @@ void main() {
         .expect("target");
 
         assert!(matches!(
-            Shader::new(&compiler, input),
+            Shader::new(&compiler, input).parse(),
             Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
         ));
     }
@@ -625,8 +625,8 @@ void main() {
         .expect("target");
 
         let input2 = input.clone();
-        let _shader1 = Shader::new(&compiler, input).expect("shader1");
-        let _shader2 = Shader::new(&compiler, input2).expect("shader2");
+        let _shader1 = Shader::new(&compiler, input).parse().expect("shader1");
+        let _shader2 = Shader::new(&compiler, input2).parse().expect("shader2");
         // One include directive per shader, exercised through the shared Rc.
         assert_eq!(handler.calls, 2);
     }
@@ -685,11 +685,53 @@ void main() {
         )
         .expect("target");
 
-        let result = Shader::new(&compiler, input);
+        let result = Shader::new(&compiler, input).parse();
         std::panic::set_hook(prev);
 
         assert!(matches!(
             result,
+            Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
+        ));
+    }
+    
+    #[test]
+    pub fn test_preamble() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::from(
+            r#"
+
+layout(location = 0) out vec4 color;
+
+void main() {
+    color = vec4(1.0);
+}
+        "#,
+        );
+        let preamble = "#version 460\n";
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                version_profile: None,
+            },
+            None::<&[(&str, Option<&str>)]>,
+            None,
+        )
+        .expect("target");
+
+        let mut shader = Shader::new(&compiler, input);
+        shader.preamble(preamble);
+
+        assert!(matches!(
+            shader.parse(),
             Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
         ));
     }

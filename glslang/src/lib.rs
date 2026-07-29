@@ -19,6 +19,7 @@ static COMPILER_INSTANCE: OnceLock<Option<Compiler>> = OnceLock::new();
 pub struct Compiler;
 
 pub use crate::ctypes::*;
+use crate::error::GlslangError;
 
 pub use program::Program;
 pub use shader::*;
@@ -39,8 +40,8 @@ impl Compiler {
     }
 
     /// Create a [`Shader`](crate::Shader) with the given inputs.
-    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader<'_>, error::GlslangError> {
-        Shader::new(&self, input)
+    pub fn create_shader(&self, input: ShaderInput) -> Result<Shader<'_>, GlslangError> {
+        Shader::new(&self, input).parse()
     }
 
     /// Create a [`Program`](crate::Program) instance.
