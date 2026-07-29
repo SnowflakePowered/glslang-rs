@@ -187,11 +187,11 @@ impl<'a> Drop for Program<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+use super::*;
     use crate::ctypes::ShaderStage;
     use crate::include::{IncludeHandler, IncludeResult};
     use crate::shader::{CompilerOptions, OpenGlVersion, ShaderInput, ShaderSource, Target};
-    use crate::{GlslProfile, ShaderMessage, SourceLanguage, ShaderOptions};
+    use crate::{GlslProfile, ShaderMessage, ShaderOptions, SourceLanguage, VulkanVersion, SpirvVersion};
     use rspirv::binary::Disassemble;
 
     #[test]
@@ -713,5 +713,45 @@ void main() {
             result,
             Err(GlslangError::ParseError(_)) | Err(GlslangError::PreprocessError(_))
         ));
+    }
+
+    #[test]
+    pub fn test_auto_binding() {
+        let compiler = Compiler::acquire().unwrap();
+
+        let source = ShaderSource::try_from(String::from(
+            r#"
+#version 460
+
+uniform float f;
+
+void main()
+{
+    gl_Position = vec4(f, f, f, 1.0);
+}
+        "#,
+        ))
+        .expect("source");
+
+        let input = ShaderInput::new(
+            &source,
+            ShaderStage::Vertex,
+            &CompilerOptions {
+                source_language: SourceLanguage::GLSL,
+                target: Target::OpenGL {
+                    version: OpenGlVersion::OpenGL4_5,
+                    spirv_version: None,
+                },
+                messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::AUTO_MAP_BINDINGS | ShaderOptions::AUTO_MAP_LOCATIONS,
+                entry_point: None,
+                invert_y: false,
+                version_profile: None,
+            },
+            None,
+            None,
+        )
+        .expect("target");
+        let _shader = Shader::new(&compiler, input).expect("shader init");
     }
 }
