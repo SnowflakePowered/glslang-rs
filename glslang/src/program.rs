@@ -191,7 +191,7 @@ mod tests {
     use crate::ctypes::ShaderStage;
     use crate::include::{IncludeHandler, IncludeResult};
     use crate::shader::{CompilerOptions, OpenGlVersion, ShaderInput, ShaderSource, Target};
-    use crate::{GlslProfile, ShaderMessage, SourceLanguage};
+    use crate::{GlslProfile, ShaderMessage, SourceLanguage, ShaderOptions};
     use rspirv::binary::Disassemble;
 
     #[test]
@@ -301,6 +301,9 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: Some((120, GlslProfile::None)),
             },
             None,
@@ -336,6 +339,9 @@ void main() {
                 source_language: SourceLanguage::GLSL,
                 target: Target::None(None),
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             None,
@@ -447,6 +453,9 @@ void main() {
                 source_language: SourceLanguage::GLSL,
                 target: Target::None(None),
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             Some(&[("CUSTOM_MACRO", Some("1.0"))]),
@@ -506,6 +515,9 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             Some(&[("CUSTOM_MACRO", Some("1.0"))]),
@@ -552,6 +564,9 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             None::<&[(&str, Option<&str>)]>,
@@ -617,6 +632,9 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             None::<&[(&str, Option<&str>)]>,
@@ -678,6 +696,9 @@ void main() {
                     spirv_version: None,
                 },
                 messages: ShaderMessage::DEBUG_INFO | ShaderMessage::DEFAULT,
+                options: ShaderOptions::DEFAULT,
+                entry_point: None,
+                invert_y: false,
                 version_profile: None,
             },
             None::<&[(&str, Option<&str>)]>,

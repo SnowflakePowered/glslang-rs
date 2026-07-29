@@ -67,6 +67,7 @@ impl<'a> Shader<'a> {
             _compiler,
         };
 
+        // Set settings & options
         let preamble = input
             .defines
             .iter()
@@ -78,7 +79,20 @@ impl<'a> Shader<'a> {
         unsafe {
             sys::glslang_shader_set_preamble(shader.handle.as_ptr(), cpreamble.as_ptr());
         }
+        unsafe {
+            sys::glslang_shader_set_options(shader.handle.as_ptr(), input.options.0);
+        }
+        if let Some(entry_point) = input.entry_point {
+            let centry_point = CString::new(entry_point).expect("Invalid entry point format");
+            unsafe {
+                sys::glslang_shader_set_entry_point(shader.handle.as_ptr(), centry_point.as_ptr());
+            }
+        }
+        unsafe {
+            sys::glslang_shader_set_invert_y(shader.handle.as_ptr(), input.invert_y);
+        }
 
+        // Parse shader
         unsafe {
             if sys::glslang_shader_preprocess(shader.handle.as_ptr(), &input.input) == 0 {
                 return Err(ParseError(GlslangErrorLog::new(shader.get_log(), shader.get_debug_log())));
@@ -292,6 +306,9 @@ pub struct ShaderInput<'a> {
     _source: &'a ShaderSource,
     _resource: &'a sys::glslang_resource_t,
     pub(crate) defines: FxHashMap<SmartString<LazyCompact>, Option<SmartString<LazyCompact>>>,
+    pub(crate) options: ShaderOptions,
+    pub(crate) entry_point: Option<String>,
+    pub(crate) invert_y: bool,
     pub(crate) input: sys::glslang_input_t,
     // Keeps the heap allocation behind `input.callbacks_ctx` alive for the
     // life of this `ShaderInput` (and any clones). When the last clone drops,
@@ -530,6 +547,12 @@ pub struct CompilerOptions {
     pub version_profile: Option<(i32, GlslProfile)>,
     /// Messages for glslang to emit
     pub messages: ShaderMessage,
+    /// Options to pass to glslang
+    pub options: ShaderOptions,
+    /// Entry point to pass to glslang
+    pub entry_point: Option<String>,
+    /// Invert y
+    pub invert_y: bool,
 }
 
 impl Default for CompilerOptions {
@@ -542,6 +565,9 @@ impl Default for CompilerOptions {
             },
             version_profile: None,
             messages: ShaderMessage::DEFAULT,
+            options: ShaderOptions::DEFAULT,
+            entry_point: None,
+            invert_y: false,
         }
     }
 }
@@ -677,6 +703,9 @@ impl<'a> ShaderInput<'a> {
                     })
                     .collect()
             }),
+            options: options.options,
+            entry_point: options.entry_point.clone(),
+            invert_y: options.invert_y,
             input: sys::glslang_input_t {
                 language: options.source_language,
                 stage,
