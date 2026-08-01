@@ -113,29 +113,48 @@ impl<'shader> Shader<'shader> {
     }
 }
 
+/// An empty, `'static` preamble, used to clear glslang's borrowed preamble
+/// pointer once parsing is done. `TShader::setPreamble` only stores the pointer,
+/// so it must never be left pointing at an allocation we are about to release.
+const EMPTY_PREAMBLE: &[u8] = b"\0";
+
 pub struct ShaderBuilder<'shader, 'input> {
     shader: Shader<'shader>,
-    _inputs: ShaderInput<'input>,
+    /// Boxed to give the `glslang_input_t` a stable address: `glslang_shader_create`
+    /// records `&input.code` — the address of the *field*, not of the string — via
+    /// `TShader::setStrings`, and dereferences it again in `glslang_shader_preprocess`.
+    /// Moving the `ShaderInput` between those two calls would leave glslang holding
+    /// a pointer into a dead stack frame.
+    _inputs: Box<ShaderInput<'input>>,
+    /// The `#define`s of the [`ShaderInput`], kept at the front of the preamble so
+    /// that a later [`ShaderBuilder::preamble`] call cannot drop them.
+    defines: String,
+    /// Owns the allocation that glslang's borrowed preamble pointer refers to.
+    preamble: Option<CString>,
 }
 
 impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
     fn new(_compiler: &'shader Compiler, input: ShaderInput<'input>) -> Self {
+        let inputs = Box::new(input);
         let mut shader = ShaderBuilder {
             shader: Shader {
                 handle: unsafe {
-                    NonNull::new(sys::glslang_shader_create(&input.input))
+                    NonNull::new(sys::glslang_shader_create(&inputs.input))
                         .expect("glslang created null shader")
                 },
-                stage: input.input.stage,
-                is_spirv: input.input.target_language == sys::glslang_target_language_t::SPIRV,
+                stage: inputs.input.stage,
+                is_spirv: inputs.input.target_language == sys::glslang_target_language_t::SPIRV,
                 _compiler,
             },
-            _inputs: input,
+            _inputs: inputs,
+            defines: String::new(),
+            preamble: None,
         };
-        /*let preamble = shader.compute_define_preamble();
-        if !preamble.is_empty() {
-            shader.preamble(&preamble);
-        }*/
+
+        shader.defines = shader.compute_define_preamble();
+        if !shader.defines.is_empty() {
+            shader.preamble("");
+        }
         shader
     }
     fn compute_define_preamble(&self) -> String {
@@ -146,22 +165,42 @@ impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
             .collect::<Vec<String>>()
             .join("")
     }
-    pub fn parse(self) -> Result<Shader<'shader>, GlslangError> {
+    pub fn parse(mut self) -> Result<Shader<'shader>, GlslangError> {
+        let result = unsafe {
+            if sys::glslang_shader_preprocess(self.shader.handle.as_ptr(), &self._inputs.input) == 0
+                || sys::glslang_shader_parse(self.shader.handle.as_ptr(), &self._inputs.input) == 0
+            {
+                Err(ParseError(GlslangErrorLog::new(self.shader.get_log(), self.shader.get_debug_log())))
+            } else {
+                Ok(())
+            }
+        };
+
+        // glslang has read the preamble by now but still holds the pointer, so
+        // repoint it at a `'static` empty string before releasing our allocation:
+        // the returned `Shader` must not carry a dangling borrow.
         unsafe {
-            if sys::glslang_shader_preprocess(self.shader.handle.as_ptr(), &self._inputs.input) == 0 {
-                return Err(ParseError(GlslangErrorLog::new(self.shader.get_log(), self.shader.get_debug_log())));
-            }
-            if sys::glslang_shader_parse(self.shader.handle.as_ptr(), &self._inputs.input) == 0 {
-                return Err(ParseError(GlslangErrorLog::new(self.shader.get_log(), self.shader.get_debug_log())));
-            }
+            sys::glslang_shader_set_preamble(
+                self.shader.handle.as_ptr(),
+                EMPTY_PREAMBLE.as_ptr().cast(),
+            )
         }
-        Ok(self.shader)
+        drop(self.preamble.take());
+
+        result.map(|()| self.shader)
     }
 
-    /// Set shader preamble.
+    /// Set shader preamble. The `#define`s of the [`ShaderInput`] this builder was
+    /// created from are prepended to it.
     pub fn preamble(&mut self, preamble: &str) {
-        let cpreamble = CString::new(preamble).expect("Invalid preamble format");
+        let cpreamble =
+            CString::new(format!("{}{preamble}", self.defines)).expect("Invalid preamble format");
+
+        // `TShader::setPreamble` stores the pointer as-is rather than copying, so the
+        // `CString` has to outlive parsing. Replacing glslang's pointer before the
+        // previous allocation is dropped keeps it from ever observing freed memory.
         unsafe { sys::glslang_shader_set_preamble(self.shader.handle.as_ptr(), cpreamble.as_ptr()) }
+        self.preamble = Some(cpreamble);
     }
 
     /// Set shader options flags.
@@ -172,6 +211,8 @@ impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
     /// Set shader entry point.
     pub fn entry_point(&mut self, entry_point: &str) {
         let centry_point = CString::new(entry_point).expect("Invalid entry point format");
+        // Unlike the preamble, glslang copies this into a `std::string`
+        // (`TIntermediate::setEntryPointName`), so the allocation can be dropped here.
         unsafe { sys::glslang_shader_set_entry_point(self.shader.handle.as_ptr(), centry_point.as_ptr()) }
     }
 
@@ -183,6 +224,7 @@ impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
     /// Set the default uniform block name.
     pub fn default_uniform_block_name(&mut self, name: &str) {
         let cname = CString::new(name).expect("Invalid entry point format");
+        // Copied into a `std::string` by `TIntermediate::setGlobalUniformBlockName`.
         unsafe {
             sys::glslang_shader_set_default_uniform_block_name(self.shader.handle.as_ptr(), cname.as_ptr());
         }
@@ -207,6 +249,9 @@ impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
             .map(|b| b.as_ptr())
             .collect::<Vec<*const c_char>>();
 
+        // `glslang_shader_set_resource_set_binding` copies the strings into a
+        // `std::vector<std::string>` owned by the shader, so `cbindings` can be
+        // dropped when this returns.
         unsafe {
             sys::glslang_shader_set_resource_set_binding(
                 self.shader.handle.as_ptr(),
