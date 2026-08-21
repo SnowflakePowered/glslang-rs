@@ -695,7 +695,7 @@ void main() {
     }
     
     #[test]
-    pub fn test_preamble() {
+    pub fn test_builder() {
         let compiler = Compiler::acquire().unwrap();
 
         let source = ShaderSource::from(
@@ -729,6 +729,15 @@ void main() {
 
         let mut shader = Shader::new(&compiler, input);
         shader.preamble(preamble);
+        shader.default_uniform_block_name("uniform");
+        shader.default_uniform_block_set_and_binding(0, 0);
+        shader.entry_point("main");
+        shader.glsl_version(100);
+        shader.invert_y(true);
+        shader.options(sys::glslang_shader_options_t::DEFAULT);
+        shader.resource_set_binding(&["oui", "non"]);
+        shader.shift_binding(sys::glslang_resource_type_t::UBO, 0);
+        shader.shift_binding_for_set(sys::glslang_resource_type_t::UBO, 0, 0);
 
         assert!(matches!(
             shader.parse(),
