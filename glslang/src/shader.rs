@@ -216,6 +216,16 @@ impl<'shader, 'input> ShaderBuilder<'shader, 'input> {
         unsafe { sys::glslang_shader_set_entry_point(self.shader.handle.as_ptr(), centry_point.as_ptr()) }
     }
 
+    /// Set the entry point name as it appears in the source, which may differ from the
+    /// entry point name in the output set with [`ShaderBuilder::entry_point`].
+    pub fn source_entry_point(&mut self, entry_point: &str) {
+        let centry_point = CString::new(entry_point).expect("Invalid entry point format");
+        // Copied into a `std::string` by `TShader::setSourceEntryPoint`.
+        unsafe {
+            sys::glslang_shader_set_source_entry_point(self.shader.handle.as_ptr(), centry_point.as_ptr())
+        }
+    }
+
     /// Set shader invert y.
     pub fn invert_y(&mut self, invert_y: bool) {
         unsafe { sys::glslang_shader_set_invert_y(self.shader.handle.as_ptr(), invert_y) }
@@ -588,6 +598,7 @@ impl Target {
 
 bitflags! {
     /// Shader messages from the glslang compiler
+    #[non_exhaustive]
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
     pub struct ShaderMessage: i32 {
         const DEFAULT = sys::glslang_messages_t::DEFAULT.0;
@@ -611,6 +622,7 @@ bitflags! {
         const DISPLAY_ERROR_COLUMN = sys::glslang_messages_t::DISPLAY_ERROR_COLUMN.0;
         const LINK_TIME_OPTIMIZATION = sys::glslang_messages_t::LINK_TIME_OPTIMIZATION.0;
         const VALIDATE_CROSS_STAGE_IO = sys::glslang_messages_t::VALIDATE_CROSS_STAGE_IO.0;
+        const RELAX_SET_BINDING_LIMITS = sys::glslang_messages_t::RELAX_SET_BINDING_LIMITS.0;
     }
 }
 

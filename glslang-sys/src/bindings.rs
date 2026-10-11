@@ -135,6 +135,7 @@ impl glslang_messages_t {
     pub const DISPLAY_ERROR_COLUMN: glslang_messages_t = glslang_messages_t(131072);
     pub const LINK_TIME_OPTIMIZATION: glslang_messages_t = glslang_messages_t(262144);
     pub const VALIDATE_CROSS_STAGE_IO: glslang_messages_t = glslang_messages_t(524288);
+    pub const RELAX_SET_BINDING_LIMITS: glslang_messages_t = glslang_messages_t(1048576);
 }
 impl ::std::ops::BitOr<glslang_messages_t> for glslang_messages_t {
     type Output = Self;
@@ -450,12 +451,16 @@ pub struct glslang_spv_options_s {
     pub strip_debug_info: bool,
     pub disable_optimizer: bool,
     pub optimize_size: bool,
+    pub optimize_performance: bool,
     pub disassemble: bool,
     pub validate: bool,
     pub emit_nonsemantic_shader_debug_info: bool,
     pub emit_nonsemantic_shader_debug_source: bool,
     pub compile_only: bool,
     pub optimize_allow_expanded_id_bound: bool,
+    pub compiler_signature: *const ::std::os::raw::c_char,
+    pub command_line_arguments: *const ::std::os::raw::c_char,
+    pub current_working_directory: *const ::std::os::raw::c_char,
 }
 pub type glslang_spv_options_t = glslang_spv_options_s;
 unsafe extern "C" {
@@ -475,6 +480,12 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn glslang_shader_set_preamble(
+        shader: *mut glslang_shader_t,
+        s: *const ::std::os::raw::c_char,
+    );
+}
+unsafe extern "C" {
+    pub fn glslang_shader_set_source_entry_point(
         shader: *mut glslang_shader_t,
         s: *const ::std::os::raw::c_char,
     );
