@@ -110,10 +110,15 @@ pub fn main() {
             .archiver(sdk.join(format!("bin/llvm-ar{exe}")))
             .cpp_link_stdlib(None)
             .flag("--target=wasm32-wasip1")
-            .flag(&format!("--sysroot={}", sysroot.display()))
-            .flag("-fno-exceptions");
+            .flag(&format!("--sysroot={}", sysroot.display()));
         sysroot
     });
+
+    if glslang_build.get_compiler().is_like_msvc() {
+        glslang_build.flag("/EHs-c-").define("_HAS_EXCEPTIONS", "0");
+    } else {
+        glslang_build.flag("-fno-exceptions");
+    }
 
     add_subdirectory(&mut glslang_build, "glslang/CInterface");
     add_subdirectory(&mut glslang_build, "glslang/GenericCodeGen");
