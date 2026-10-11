@@ -4,6 +4,9 @@
 
 mod bindings;
 
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod wasi_stubs;
+
 pub use bindings::*;
 
 impl crate::bindings::glslang_limits_s {
