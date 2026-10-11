@@ -126,12 +126,16 @@ impl<'a> Program<'a> {
             strip_debug_info: false,
             disable_optimizer: false,
             optimize_size: true,
+            optimize_performance: false,
             disassemble: false,
             validate: false,
             emit_nonsemantic_shader_debug_info: false,
             emit_nonsemantic_shader_debug_source: false,
             compile_only: false,
             optimize_allow_expanded_id_bound: false,
+            compiler_signature: std::ptr::null(),
+            command_line_arguments: std::ptr::null(),
+            current_working_directory: std::ptr::null(),
         };
 
         // We don't support SPIRV compile options because nearly all of them (except for generateDebugInfo),
