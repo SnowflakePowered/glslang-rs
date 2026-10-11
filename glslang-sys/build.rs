@@ -45,6 +45,7 @@ pub fn main() {
 
     println!("cargo:rerun-if-changed=native/glslang");
     println!("cargo:rerun-if-changed=native/build_info");
+    println!("cargo:rerun-if-changed=native/wasi_stubs.cpp");
 
     let mut glslang_build = cc::Build::new();
     glslang_build
@@ -57,6 +58,10 @@ pub fn main() {
         .includes(&["native/glslang", "native/build_info"]);
 
     let wasm_unknown = env::var("TARGET").is_ok_and(|t| t == "wasm32-unknown-unknown");
+    if wasm_unknown {
+        // wasi-libc's WASI imports are satisfied by weak stubs, as there is no host to import from.
+        glslang_build.file("native/wasi_stubs.cpp");
+    }
     let wasi_sysroot = wasm_unknown.then(|| {
         let sdk = wasi_sdk();
         let sysroot = sdk.join("share/wasi-sysroot");
@@ -88,10 +93,13 @@ pub fn main() {
 
     if let Some(sysroot) = wasi_sysroot {
         let lib = sysroot.join("lib/wasm32-wasip1");
-        println!("cargo:rustc-link-search=native={}", lib.join("noeh").display());
+        // glslang is built without exceptions, but links the exception-enabled runtime so that it
+        // can share a single libc++ with other crates, such as spirv-cross-sys, that need exceptions.
+        println!("cargo:rustc-link-search=native={}", lib.join("eh").display());
         println!("cargo:rustc-link-search=native={}", lib.display());
         println!("cargo:rustc-link-lib=static=c++");
         println!("cargo:rustc-link-lib=static=c++abi");
+        println!("cargo:rustc-link-lib=static=unwind");
         println!("cargo:rustc-link-lib=static=c");
     }
 }
