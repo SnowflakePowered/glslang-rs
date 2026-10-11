@@ -38,6 +38,10 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      # glslang-sys downloads wasi-sdk for its libc/libc++ sysroot on this target.
+      # glslang-sys needs wasi-sdk for its C++ toolchain and libc/libc++ sysroot on this target.
+      - name: Install wasi-sdk
+        run: |
+          curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz | tar -xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
       - name: Build
         run: cargo build -p glslang-sys -p glslang --target wasm32-unknown-unknown
