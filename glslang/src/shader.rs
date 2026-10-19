@@ -8,7 +8,6 @@ use bitflags::bitflags;
 use glslang_sys as sys;
 use glslang_sys::glsl_include_callbacks_s;
 use rustc_hash::FxHashMap;
-use smartstring::{LazyCompact, SmartString};
 use std::borrow::Cow;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::ptr::NonNull;
@@ -403,7 +402,7 @@ pub struct ShaderInput<'a> {
     // Keep these alive.
     _source: &'a ShaderSource,
     _resource: &'a sys::glslang_resource_t,
-    pub(crate) defines: FxHashMap<SmartString<LazyCompact>, Option<SmartString<LazyCompact>>>,
+    pub(crate) defines: FxHashMap<String, Option<String>>,
     pub(crate) input: sys::glslang_input_t,
     // Keeps the heap allocation behind `input.callbacks_ctx` alive for the
     // life of this `ShaderInput` (and any clones). When the last clone drops,
@@ -784,10 +783,7 @@ impl<'a> ShaderInput<'a> {
                     .into_iter()
                     .map(|v| {
                         let v: MacroDefine = MacroDefine::from(v);
-                        (
-                            SmartString::from(v.name),
-                            v.value.map(|s| SmartString::from(s)),
-                        )
+                        (v.name.into_owned(), v.value.map(Cow::into_owned))
                     })
                     .collect()
             }),

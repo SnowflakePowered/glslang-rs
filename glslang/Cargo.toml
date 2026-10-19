@@ -19,7 +19,6 @@ glslang-sys = { version = "0.9", path = "../glslang-sys" }
 thiserror = "2.0"
 rustc-hash = "2.0.0"
 bitflags = "2.4.2"
-smartstring = "1.0.1"
 
 [dev-dependencies]
 rspirv = "0.12.0"
